@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 
 class WorkspaceListPage extends StatelessWidget {
   const WorkspaceListPage({super.key});
@@ -8,7 +10,17 @@ class WorkspaceListPage extends StatelessWidget {
     final workspaces = ['Mobile Team', 'Design Squad', 'Study Group'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workspaces')),
+      appBar: AppBar(
+        title: const Text('Workspaces'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.read<AuthCubit>().signOut();
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
+      ),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: workspaces.length,
@@ -24,10 +36,6 @@ class WorkspaceListPage extends StatelessWidget {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
       ),
     );
   }
