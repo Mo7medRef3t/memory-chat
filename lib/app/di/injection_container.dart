@@ -17,6 +17,14 @@ import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/login_cubit.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/signup_cubit.dart';
 
+import 'package:memory_chat/features/workspaces/data/datasources/workspaces_remote_data_source.dart';
+import 'package:memory_chat/features/workspaces/data/repositories/workspaces_repository_impl.dart';
+import 'package:memory_chat/features/workspaces/domain/repositories/workspaces_repository.dart';
+import 'package:memory_chat/features/workspaces/domain/usecases/create_workspace_usecase.dart';
+import 'package:memory_chat/features/workspaces/domain/usecases/get_user_workspaces_usecase.dart';
+import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
+import 'package:memory_chat/features/workspaces/presentation/cubit/workspace_list_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> configureDependencies() async {
@@ -50,4 +58,32 @@ Future<void> configureDependencies() async {
 
   sl.registerFactory(() => LoginCubit(sl<SignInUseCase>()));
   sl.registerFactory(() => SignupCubit(sl<SignUpUseCase>()));
+
+  sl.registerLazySingleton<WorkspacesRemoteDataSource>(
+    () => WorkspacesRemoteDataSource(sl<SupabaseClient>()),
+  );
+
+  sl.registerLazySingleton<WorkspacesRepository>(
+    () => WorkspacesRepositoryImpl(
+      remoteDataSource: sl<WorkspacesRemoteDataSource>(),
+      idGenerator: sl<IdGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => GetUserWorkspacesUseCase(sl<WorkspacesRepository>()),
+  );
+
+  sl.registerLazySingleton(
+    () => CreateWorkspaceUseCase(sl<WorkspacesRepository>()),
+  );
+
+  sl.registerFactory(() => WorkspaceListCubit(sl<GetUserWorkspacesUseCase>()));
+
+  sl.registerFactory(
+    () => CreateWorkspaceCubit(
+      createWorkspaceUseCase: sl<CreateWorkspaceUseCase>(),
+      idGenerator: sl<IdGenerator>(),
+    ),
+  );
 }
