@@ -7,6 +7,7 @@ class MessageEntity extends Equatable {
   final String content;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
   final String? senderName;
 
   const MessageEntity({
@@ -16,6 +17,7 @@ class MessageEntity extends Equatable {
     required this.content,
     required this.createdAt,
     this.updatedAt,
+    this.deletedAt,
     this.senderName,
   });
 
@@ -27,6 +29,7 @@ class MessageEntity extends Equatable {
     content,
     createdAt,
     updatedAt,
+    deletedAt,
     senderName,
   ];
 }

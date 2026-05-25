@@ -1,4 +1,6 @@
 import 'package:get_it/get_it.dart';
+import 'package:memory_chat/core/database/app_database.dart';
+import 'package:memory_chat/core/database/daos/message_dao.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -234,15 +236,18 @@ Future<void> configureDependencies() async {
     ),
   );
 
+  // Chat Feature
   sl.registerLazySingleton<ChatRemoteDataSource>(
-  () => ChatRemoteDataSource(
-    sl<SupabaseClient>(),
-    sl<IdGenerator>(),
-  ),
-);
+    () => ChatRemoteDataSource(sl<SupabaseClient>(), sl<IdGenerator>()),
+  );
+
+  sl.registerFactory(() => MessageDao(sl<AppDatabase>()));
 
   sl.registerLazySingleton<ChatRepository>(
-    () => ChatRepositoryImpl(sl<ChatRemoteDataSource>()),
+    () => ChatRepositoryImpl(
+      remoteDataSource: sl<ChatRemoteDataSource>(),
+      messageDao: sl<MessageDao>(),
+    ),
   );
 
   sl.registerLazySingleton(() => SendMessageUseCase(sl<ChatRepository>()));
@@ -254,4 +259,9 @@ Future<void> configureDependencies() async {
       watchMessagesUseCase: sl<WatchMessagesUseCase>(),
     ),
   );
+
+  sl.registerLazySingleton<AppDatabase>(() => AppDatabase());
+
+  // If you create more DAOs:
+  sl.registerFactory(() => MessageDao(sl<AppDatabase>()));
 }
