@@ -9,6 +9,8 @@ import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxe
 import 'package:memory_chat/shared/widgets/app_text_field.dart';
 import 'package:memory_chat/shared/widgets/loading_indicator.dart';
 import 'package:memory_chat/shared/widgets/primary_button.dart';
+import 'package:memory_chat/app/router/route_names.dart';
+import 'package:go_router/go_router.dart';
 
 class MemoryBoxListPage extends StatelessWidget {
   final String workspaceId;
@@ -72,7 +74,16 @@ class _MemoryBoxListView extends StatelessWidget {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(sectionTitle ?? 'Memory Boxes')),
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () => context.goNamed(
+              RouteNames.workspaceDetails,
+              pathParameters: {'workspaceId': workspaceId},
+            ),
+          ),
+          title: Text(sectionTitle ?? 'Memory Boxes'),
+          centerTitle: true,
+        ),
         body: BlocBuilder<MemoryBoxesCubit, MemoryBoxesState>(
           builder: (context, state) {
             if (state.status == MemoryBoxesStatus.loading) {
@@ -120,7 +131,20 @@ class _MemoryBoxListView extends StatelessWidget {
                         PopupMenuItem(value: 'delete', child: Text('Delete')),
                       ],
                     ),
-                    onTap: () {},
+                    onTap: () {
+                      context.goNamed(
+                        RouteNames.noteList,
+                        pathParameters: {
+                          'workspaceId': workspaceId,
+                          'sectionId': sectionId,
+                          'memoryBoxId': box.id,
+                        },
+                        extra: {
+                          'memoryBoxTitle': box.title,
+                          'sectionTitle': sectionTitle,
+                        },
+                      );
+                    },
                   ),
                 );
               },

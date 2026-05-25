@@ -45,6 +45,17 @@ import 'package:memory_chat/features/memory_boxes/domain/usecases/update_memory_
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_cubit.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_cubit.dart';
 
+import 'package:memory_chat/features/notes/data/datasources/notes_remote_data_source.dart';
+import 'package:memory_chat/features/notes/data/repositories/notes_repository_impl.dart';
+import 'package:memory_chat/features/notes/domain/repositories/notes_repository.dart';
+import 'package:memory_chat/features/notes/domain/usecases/create_note_usecase.dart';
+import 'package:memory_chat/features/notes/domain/usecases/delete_note_usecase.dart';
+import 'package:memory_chat/features/notes/domain/usecases/get_note_by_id_usecase.dart';
+import 'package:memory_chat/features/notes/domain/usecases/get_notes_usecase.dart';
+import 'package:memory_chat/features/notes/domain/usecases/update_note_usecase.dart';
+import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.dart';
+import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> configureDependencies() async {
@@ -179,6 +190,39 @@ Future<void> configureDependencies() async {
   sl.registerFactory(
     () => CreateMemoryBoxCubit(
       createMemoryBoxUseCase: sl<CreateMemoryBoxUseCase>(),
+      idGenerator: sl<IdGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton<NotesRemoteDataSource>(
+    () => NotesRemoteDataSource(sl<SupabaseClient>()),
+  );
+
+  sl.registerLazySingleton<NotesRepository>(
+    () => NotesRepositoryImpl(sl<NotesRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton(() => GetNotesUseCase(sl<NotesRepository>()));
+
+  sl.registerLazySingleton(() => GetNoteByIdUseCase(sl<NotesRepository>()));
+
+  sl.registerLazySingleton(() => CreateNoteUseCase(sl<NotesRepository>()));
+
+  sl.registerLazySingleton(() => UpdateNoteUseCase(sl<NotesRepository>()));
+
+  sl.registerLazySingleton(() => DeleteNoteUseCase(sl<NotesRepository>()));
+
+  sl.registerFactory(
+    () => NotesCubit(
+      getNotesUseCase: sl<GetNotesUseCase>(),
+      deleteNoteUseCase: sl<DeleteNoteUseCase>(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => NoteEditorCubit(
+      createNoteUseCase: sl<CreateNoteUseCase>(),
+      updateNoteUseCase: sl<UpdateNoteUseCase>(),
       idGenerator: sl<IdGenerator>(),
     ),
   );

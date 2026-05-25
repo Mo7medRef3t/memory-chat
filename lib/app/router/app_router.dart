@@ -6,6 +6,8 @@ import 'package:memory_chat/features/auth/presentation/cubit/auth_state.dart';
 import 'package:memory_chat/features/auth/presentation/pages/app_entry_page.dart';
 import 'package:memory_chat/features/auth/presentation/pages/login_page.dart';
 import 'package:memory_chat/features/auth/presentation/pages/signup_page.dart';
+import 'package:memory_chat/features/notes/presentation/pages/note_editor_page.dart';
+import 'package:memory_chat/features/notes/presentation/pages/note_list_page.dart';
 import 'package:memory_chat/features/workspaces/presentation/pages/workspace_list_page.dart';
 import 'package:memory_chat/features/workspaces/presentation/pages/workspace_details_page.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/pages/memory_box_list_page.dart';
@@ -28,7 +30,7 @@ class AppRouter {
       }
 
       if (!isLoggedIn) {
-        if (isGoingToLogin || isGoingToSignup ) {
+        if (isGoingToLogin || isGoingToSignup) {
           return null;
         }
         return '/login';
@@ -61,7 +63,7 @@ class AppRouter {
         name: RouteNames.workspaceList,
         builder: (context, state) => const WorkspaceListPage(),
       ),
-       GoRoute(
+      GoRoute(
         path: '/workspaces/:workspaceId',
         name: RouteNames.workspaceDetails,
         builder: (context, state) {
@@ -75,21 +77,61 @@ class AppRouter {
         },
       ),
       GoRoute(
-  path: '/workspaces/:workspaceId/sections/:sectionId/memory-boxes',
-  name: RouteNames.memoryBoxList,
-  builder: (context, state) {
-    final workspaceId = state.pathParameters['workspaceId']!;
-    final sectionId = state.pathParameters['sectionId']!;
-    final extra = state.extra as Map<String, dynamic>?;
+        path: '/workspaces/:workspaceId/sections/:sectionId/memory-boxes',
+        name: RouteNames.memoryBoxList,
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final sectionId = state.pathParameters['sectionId']!;
+          final extra = state.extra as Map<String, dynamic>?;
 
-    return MemoryBoxListPage(
-      workspaceId: workspaceId,
-      sectionId: sectionId,
-      sectionTitle: extra?['sectionTitle'] as String?,
-      workspaceName: extra?['workspaceName'] as String?,
-    );
-  },
-),
+          return MemoryBoxListPage(
+            workspaceId: workspaceId,
+            sectionId: sectionId,
+            sectionTitle: extra?['sectionTitle'] as String?,
+            workspaceName: extra?['workspaceName'] as String?,
+          );
+        },
+      ),
+      GoRoute(
+        path:
+            '/workspaces/:workspaceId/sections/:sectionId/memory-boxes/:memoryBoxId/notes',
+        name: RouteNames.noteList,
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final sectionId = state.pathParameters['sectionId']!;
+          final memoryBoxId = state.pathParameters['memoryBoxId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+
+          return NoteListPage(
+            workspaceId: workspaceId,
+            sectionId: sectionId,
+            memoryBoxId: memoryBoxId,
+            memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
+            sectionTitle: extra?['sectionTitle'] as String?,
+          );
+        },
+      ),
+      GoRoute(
+        path:
+            '/workspaces/:workspaceId/sections/:sectionId/memory-boxes/:memoryBoxId/notes/editor',
+        name: RouteNames.noteEditor,
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final sectionId = state.pathParameters['sectionId']!;
+          final memoryBoxId = state.pathParameters['memoryBoxId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+
+          return NoteEditorPage(
+            workspaceId: workspaceId,
+            sectionId: sectionId,
+            memoryBoxId: memoryBoxId,
+            noteId: extra?['noteId'] as String?,
+            initialTitle: extra?['title'] as String?,
+            initialContent: extra?['content'] as String?,
+            memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
+          );
+        },
+      ),
     ],
   );
 }
