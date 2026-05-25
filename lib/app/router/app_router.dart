@@ -8,6 +8,7 @@ import 'package:memory_chat/features/auth/presentation/pages/login_page.dart';
 import 'package:memory_chat/features/auth/presentation/pages/signup_page.dart';
 import 'package:memory_chat/features/workspaces/presentation/pages/workspace_list_page.dart';
 import 'package:memory_chat/features/workspaces/presentation/pages/workspace_details_page.dart';
+import 'package:memory_chat/features/memory_boxes/presentation/pages/memory_box_list_page.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -73,6 +74,22 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+  path: '/workspaces/:workspaceId/sections/:sectionId/memory-boxes',
+  name: RouteNames.memoryBoxList,
+  builder: (context, state) {
+    final workspaceId = state.pathParameters['workspaceId']!;
+    final sectionId = state.pathParameters['sectionId']!;
+    final extra = state.extra as Map<String, dynamic>?;
+
+    return MemoryBoxListPage(
+      workspaceId: workspaceId,
+      sectionId: sectionId,
+      sectionTitle: extra?['sectionTitle'] as String?,
+      workspaceName: extra?['workspaceName'] as String?,
+    );
+  },
+),
     ],
   );
 }

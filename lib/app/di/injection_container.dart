@@ -35,6 +35,16 @@ import 'package:memory_chat/features/sections/domain/usecases/rename_section_use
 import 'package:memory_chat/features/sections/presentation/cubit/create_section_cubit.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
 
+import 'package:memory_chat/features/memory_boxes/data/datasources/memory_boxes_remote_data_source.dart';
+import 'package:memory_chat/features/memory_boxes/data/repositories/memory_boxes_repository_impl.dart';
+import 'package:memory_chat/features/memory_boxes/domain/repositories/memory_boxes_repository.dart';
+import 'package:memory_chat/features/memory_boxes/domain/usecases/create_memory_box_usecase.dart';
+import 'package:memory_chat/features/memory_boxes/domain/usecases/delete_memory_box_usecase.dart';
+import 'package:memory_chat/features/memory_boxes/domain/usecases/get_memory_boxes_usecase.dart';
+import 'package:memory_chat/features/memory_boxes/domain/usecases/update_memory_box_usecase.dart';
+import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_cubit.dart';
+import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> configureDependencies() async {
@@ -130,6 +140,45 @@ Future<void> configureDependencies() async {
   sl.registerFactory(
     () => CreateSectionCubit(
       createSectionUseCase: sl<CreateSectionUseCase>(),
+      idGenerator: sl<IdGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton<MemoryBoxesRemoteDataSource>(
+    () => MemoryBoxesRemoteDataSource(sl<SupabaseClient>()),
+  );
+
+  sl.registerLazySingleton<MemoryBoxesRepository>(
+    () => MemoryBoxesRepositoryImpl(sl<MemoryBoxesRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton(
+    () => GetMemoryBoxesUseCase(sl<MemoryBoxesRepository>()),
+  );
+
+  sl.registerLazySingleton(
+    () => CreateMemoryBoxUseCase(sl<MemoryBoxesRepository>()),
+  );
+
+  sl.registerLazySingleton(
+    () => UpdateMemoryBoxUseCase(sl<MemoryBoxesRepository>()),
+  );
+
+  sl.registerLazySingleton(
+    () => DeleteMemoryBoxUseCase(sl<MemoryBoxesRepository>()),
+  );
+
+  sl.registerFactory(
+    () => MemoryBoxesCubit(
+      getMemoryBoxesUseCase: sl<GetMemoryBoxesUseCase>(),
+      updateMemoryBoxUseCase: sl<UpdateMemoryBoxUseCase>(),
+      deleteMemoryBoxUseCase: sl<DeleteMemoryBoxUseCase>(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => CreateMemoryBoxCubit(
+      createMemoryBoxUseCase: sl<CreateMemoryBoxUseCase>(),
       idGenerator: sl<IdGenerator>(),
     ),
   );

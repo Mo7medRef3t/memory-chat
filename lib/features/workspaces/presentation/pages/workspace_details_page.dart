@@ -116,7 +116,19 @@ class _WorkspaceDetailsView extends StatelessWidget {
                         PopupMenuItem(value: 'delete', child: Text('Delete')),
                       ],
                     ),
-                    onTap: () {},
+                    onTap: () {
+                      context.goNamed(
+                        RouteNames.memoryBoxList,
+                        pathParameters: {
+                          'workspaceId': workspaceId,
+                          'sectionId': section.id,
+                        },
+                        extra: {
+                          'sectionTitle': section.title,
+                          'workspaceName': workspaceName,
+                        },
+                      );
+                    },
                   ),
                 );
               },
