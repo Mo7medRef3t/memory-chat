@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
+import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/core/utils/validators.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.dart';
@@ -58,6 +60,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   Future<void> _save(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final authorId = context.read<AuthCubit>().state.user!.id;
+      final router = GoRouter.of(context);
 
       await context.read<NoteEditorCubit>().saveNote(
         noteId: widget.noteId,
@@ -65,6 +68,14 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         authorId: authorId,
         title: _titleController.text,
         content: _contentController.text,
+      );
+      router.goNamed(
+        RouteNames.noteList,
+        pathParameters: {
+          'workspaceId': widget.workspaceId,
+          'sectionId': widget.sectionId,
+          'memoryBoxId': widget.memoryBoxId,
+        },
       );
     }
   }
@@ -100,6 +111,16 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             child: Scaffold(
               appBar: AppBar(
                 title: Text(isEditMode ? 'Edit Note' : 'New Note'),
+                leading: BackButton(
+                  onPressed: () => context.goNamed(
+                    RouteNames.noteList,
+                    pathParameters: {
+                      'workspaceId': widget.workspaceId,
+                      'sectionId': widget.sectionId,
+                      'memoryBoxId': widget.memoryBoxId,
+                    },
+                  ),
+                ),
               ),
               body: SafeArea(
                 child: Padding(

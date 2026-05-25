@@ -6,6 +6,7 @@ import 'package:memory_chat/features/auth/presentation/cubit/auth_state.dart';
 import 'package:memory_chat/features/auth/presentation/pages/app_entry_page.dart';
 import 'package:memory_chat/features/auth/presentation/pages/login_page.dart';
 import 'package:memory_chat/features/auth/presentation/pages/signup_page.dart';
+import 'package:memory_chat/features/chat/presentation/pages/chat_page.dart';
 import 'package:memory_chat/features/notes/presentation/pages/note_editor_page.dart';
 import 'package:memory_chat/features/notes/presentation/pages/note_list_page.dart';
 import 'package:memory_chat/features/workspaces/presentation/pages/workspace_list_page.dart';
@@ -130,6 +131,14 @@ class AppRouter {
             initialContent: extra?['content'] as String?,
             memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
           );
+        },
+      ),
+      GoRoute(
+        path: '/workspace/:workspaceId/chat',
+        name: 'workspaceChat',
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          return ChatPage(workspaceId: workspaceId);
         },
       ),
     ],

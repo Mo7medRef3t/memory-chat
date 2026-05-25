@@ -53,7 +53,19 @@ class _NoteListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(memoryBoxTitle ?? 'Notes')),
+      appBar: AppBar(
+        title: Text(memoryBoxTitle ?? 'Notes'),
+        centerTitle: true,
+        leading: BackButton(
+          onPressed: () => context.goNamed(
+            RouteNames.memoryBoxList,
+            pathParameters: {
+              'workspaceId': workspaceId,
+              'sectionId': sectionId,
+            },
+          ),
+        ),
+      ),
       body: BlocBuilder<NotesCubit, NotesState>(
         builder: (context, state) {
           if (state.status == NotesStatus.loading) {

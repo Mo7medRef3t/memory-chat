@@ -56,6 +56,13 @@ import 'package:memory_chat/features/notes/domain/usecases/update_note_usecase.d
 import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
 
+import 'package:memory_chat/features/chat/data/datasources/chat_remote_data_source.dart';
+import 'package:memory_chat/features/chat/data/repositories/chat_repository_impl.dart';
+import 'package:memory_chat/features/chat/domain/repositories/chat_repository.dart';
+import 'package:memory_chat/features/chat/domain/usecases/send_message_usecase.dart';
+import 'package:memory_chat/features/chat/domain/usecases/watch_messages_usecase.dart';
+import 'package:memory_chat/features/chat/presentation/cubit/chat_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> configureDependencies() async {
@@ -224,6 +231,27 @@ Future<void> configureDependencies() async {
       createNoteUseCase: sl<CreateNoteUseCase>(),
       updateNoteUseCase: sl<UpdateNoteUseCase>(),
       idGenerator: sl<IdGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton<ChatRemoteDataSource>(
+  () => ChatRemoteDataSource(
+    sl<SupabaseClient>(),
+    sl<IdGenerator>(),
+  ),
+);
+
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(sl<ChatRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton(() => SendMessageUseCase(sl<ChatRepository>()));
+  sl.registerLazySingleton(() => WatchMessagesUseCase(sl<ChatRepository>()));
+
+  sl.registerFactory(
+    () => ChatCubit(
+      sendMessageUseCase: sl<SendMessageUseCase>(),
+      watchMessagesUseCase: sl<WatchMessagesUseCase>(),
     ),
   );
 }
