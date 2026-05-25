@@ -7,6 +7,7 @@ import 'package:memory_chat/features/auth/presentation/pages/app_entry_page.dart
 import 'package:memory_chat/features/auth/presentation/pages/login_page.dart';
 import 'package:memory_chat/features/auth/presentation/pages/signup_page.dart';
 import 'package:memory_chat/features/workspaces/presentation/pages/workspace_list_page.dart';
+import 'package:memory_chat/features/workspaces/presentation/pages/workspace_details_page.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -58,6 +59,19 @@ class AppRouter {
         path: '/workspaces',
         name: RouteNames.workspaceList,
         builder: (context, state) => const WorkspaceListPage(),
+      ),
+       GoRoute(
+        path: '/workspaces/:workspaceId',
+        name: RouteNames.workspaceDetails,
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final workspaceName = state.extra as String?;
+
+          return WorkspaceDetailsPage(
+            workspaceId: workspaceId,
+            workspaceName: workspaceName,
+          );
+        },
       ),
     ],
   );

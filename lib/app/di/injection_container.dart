@@ -25,6 +25,16 @@ import 'package:memory_chat/features/workspaces/domain/usecases/get_user_workspa
 import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
 import 'package:memory_chat/features/workspaces/presentation/cubit/workspace_list_cubit.dart';
 
+import 'package:memory_chat/features/sections/data/datasources/sections_remote_data_source.dart';
+import 'package:memory_chat/features/sections/data/repositories/sections_repository_impl.dart';
+import 'package:memory_chat/features/sections/domain/repositories/sections_repository.dart';
+import 'package:memory_chat/features/sections/domain/usecases/create_section_usecase.dart';
+import 'package:memory_chat/features/sections/domain/usecases/delete_section_usecase.dart';
+import 'package:memory_chat/features/sections/domain/usecases/get_sections_usecase.dart';
+import 'package:memory_chat/features/sections/domain/usecases/rename_section_usecase.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/create_section_cubit.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> configureDependencies() async {
@@ -83,6 +93,43 @@ Future<void> configureDependencies() async {
   sl.registerFactory(
     () => CreateWorkspaceCubit(
       createWorkspaceUseCase: sl<CreateWorkspaceUseCase>(),
+      idGenerator: sl<IdGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton<SectionsRemoteDataSource>(
+    () => SectionsRemoteDataSource(sl<SupabaseClient>()),
+  );
+
+  sl.registerLazySingleton<SectionsRepository>(
+    () => SectionsRepositoryImpl(sl<SectionsRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton(() => GetSectionsUseCase(sl<SectionsRepository>()));
+
+  sl.registerLazySingleton(
+    () => CreateSectionUseCase(sl<SectionsRepository>()),
+  );
+
+  sl.registerLazySingleton(
+    () => RenameSectionUseCase(sl<SectionsRepository>()),
+  );
+
+  sl.registerLazySingleton(
+    () => DeleteSectionUseCase(sl<SectionsRepository>()),
+  );
+
+  sl.registerFactory(
+    () => SectionsCubit(
+      getSectionsUseCase: sl<GetSectionsUseCase>(),
+      renameSectionUseCase: sl<RenameSectionUseCase>(),
+      deleteSectionUseCase: sl<DeleteSectionUseCase>(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => CreateSectionCubit(
+      createSectionUseCase: sl<CreateSectionUseCase>(),
       idGenerator: sl<IdGenerator>(),
     ),
   );

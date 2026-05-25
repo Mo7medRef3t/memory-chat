@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
+import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/core/utils/validators.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
@@ -95,7 +97,13 @@ class _WorkspaceListView extends StatelessWidget {
                     title: Text(workspace.name),
                     subtitle: Text(workspace.description ?? 'No description'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () {
+                      context.goNamed(
+                        RouteNames.workspaceDetails,
+                        pathParameters: {'workspaceId': workspace.id},
+                        extra: workspace.name,
+                      );
+                    },
                   ),
                 );
               },
