@@ -15,7 +15,8 @@ class CreateMemoryBoxCubit extends Cubit<CreateMemoryBoxState> {
   }) : super(const CreateMemoryBoxState());
 
   Future<void> createMemoryBox({
-    required String sectionId,
+    required String workspaceId,
+    String? sectionId,
     required String title,
     String? description,
   }) async {
@@ -26,6 +27,7 @@ class CreateMemoryBoxCubit extends Cubit<CreateMemoryBoxState> {
 
       final memoryBox = MemoryBoxEntity(
         id: idGenerator.generate(),
+        workspaceId: workspaceId, 
         sectionId: sectionId,
         title: title.trim(),
         description: description?.trim().isEmpty == true

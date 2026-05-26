@@ -8,32 +8,23 @@ class WorkspaceModel extends WorkspaceEntity {
     required super.ownerId,
     required super.createdAt,
     required super.updatedAt,
-    super.deletedAt,
   });
 
-  factory WorkspaceModel.fromJson(Map<String, dynamic> json) {
-    return WorkspaceModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      ownerId: json['owner_id'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'] as String)
-          : null,
-    );
-  }
+  factory WorkspaceModel.fromJson(Map<String, dynamic> json) => WorkspaceModel(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    description: json['description'] as String?,
+    ownerId: json['owner_id'] as String,
+    createdAt: DateTime.parse(json['created_at'] as String),
+    updatedAt: DateTime.parse(json['updated_at'] as String),
+  );
 
-  Map<String, dynamic> toInsertJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'owner_id': ownerId,
-      'created_at': createdAt.toUtc().toIso8601String(),
-      'updated_at': updatedAt.toUtc().toIso8601String(),
-      'deleted_at': deletedAt?.toUtc().toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toInsertJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'owner_id': ownerId,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
 }

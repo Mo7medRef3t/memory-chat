@@ -28,7 +28,6 @@ class NotesRepositoryImpl implements NotesRepository {
       content: note.content,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
-      deletedAt: note.deletedAt,
     );
 
     await remoteDataSource.createNote(model);

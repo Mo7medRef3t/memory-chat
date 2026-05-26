@@ -1,16 +1,16 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'workspace_dao.dart';
+part of 'workspaces_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$WorkspaceDaoMixin on DatabaseAccessor<AppDatabase> {
+mixin _$WorkspacesDaoMixin on DatabaseAccessor<AppDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
-  WorkspaceDaoManager get managers => WorkspaceDaoManager(this);
+  WorkspacesDaoManager get managers => WorkspacesDaoManager(this);
 }
 
-class WorkspaceDaoManager {
-  final _$WorkspaceDaoMixin _db;
-  WorkspaceDaoManager(this._db);
+class WorkspacesDaoManager {
+  final _$WorkspacesDaoMixin _db;
+  WorkspacesDaoManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
 }

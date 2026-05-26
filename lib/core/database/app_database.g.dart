@@ -4,7 +4,7 @@ part of 'app_database.dart';
 
 // ignore_for_file: type=lint
 class $WorkspacesTable extends Workspaces
-    with TableInfo<$WorkspacesTable, Workspace> {
+    with TableInfo<$WorkspacesTable, WorkspaceRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -58,8 +58,7 @@ class $WorkspacesTable extends Workspaces
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -70,19 +69,7 @@ class $WorkspacesTable extends Workspaces
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -92,7 +79,6 @@ class $WorkspacesTable extends Workspaces
     ownerId,
     createdAt,
     updatedAt,
-    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -101,7 +87,7 @@ class $WorkspacesTable extends Workspaces
   static const String $name = 'workspaces';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Workspace> instance, {
+    Insertable<WorkspaceRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -141,18 +127,16 @@ class $WorkspacesTable extends Workspaces
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
     return context;
   }
@@ -160,9 +144,9 @@ class $WorkspacesTable extends Workspaces
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Workspace map(Map<String, dynamic> data, {String? tablePrefix}) {
+  WorkspaceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Workspace(
+    return WorkspaceRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -187,10 +171,6 @@ class $WorkspacesTable extends Workspaces
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}deleted_at'],
-      ),
     );
   }
 
@@ -200,22 +180,20 @@ class $WorkspacesTable extends Workspaces
   }
 }
 
-class Workspace extends DataClass implements Insertable<Workspace> {
+class WorkspaceRow extends DataClass implements Insertable<WorkspaceRow> {
   final String id;
   final String name;
   final String? description;
   final String ownerId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
-  const Workspace({
+  const WorkspaceRow({
     required this.id,
     required this.name,
     this.description,
     required this.ownerId,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -228,9 +206,6 @@ class Workspace extends DataClass implements Insertable<Workspace> {
     map['owner_id'] = Variable<String>(ownerId);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt);
-    }
     return map;
   }
 
@@ -244,25 +219,21 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       ownerId: Value(ownerId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
     );
   }
 
-  factory Workspace.fromJson(
+  factory WorkspaceRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Workspace(
+    return WorkspaceRow(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -275,29 +246,26 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       'ownerId': serializer.toJson<String>(ownerId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
-  Workspace copyWith({
+  WorkspaceRow copyWith({
     String? id,
     String? name,
     Value<String?> description = const Value.absent(),
     String? ownerId,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Value<DateTime?> deletedAt = const Value.absent(),
-  }) => Workspace(
+  }) => WorkspaceRow(
     id: id ?? this.id,
     name: name ?? this.name,
     description: description.present ? description.value : this.description,
     ownerId: ownerId ?? this.ownerId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
-  Workspace copyWithCompanion(WorkspacesCompanion data) {
-    return Workspace(
+  WorkspaceRow copyWithCompanion(WorkspacesCompanion data) {
+    return WorkspaceRow(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       description: data.description.present
@@ -306,55 +274,44 @@ class Workspace extends DataClass implements Insertable<Workspace> {
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('Workspace(')
+    return (StringBuffer('WorkspaceRow(')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('ownerId: $ownerId, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    name,
-    description,
-    ownerId,
-    createdAt,
-    updatedAt,
-    deletedAt,
-  );
+  int get hashCode =>
+      Object.hash(id, name, description, ownerId, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Workspace &&
+      (other is WorkspaceRow &&
           other.id == this.id &&
           other.name == this.name &&
           other.description == this.description &&
           other.ownerId == this.ownerId &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.updatedAt == this.updatedAt);
 }
 
-class WorkspacesCompanion extends UpdateCompanion<Workspace> {
+class WorkspacesCompanion extends UpdateCompanion<WorkspaceRow> {
   final Value<String> id;
   final Value<String> name;
   final Value<String?> description;
   final Value<String> ownerId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
-  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const WorkspacesCompanion({
     this.id = const Value.absent(),
@@ -363,7 +320,6 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     this.ownerId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WorkspacesCompanion.insert({
@@ -371,21 +327,21 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     required String name,
     this.description = const Value.absent(),
     required String ownerId,
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
-       ownerId = Value(ownerId);
-  static Insertable<Workspace> custom({
+       ownerId = Value(ownerId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<WorkspaceRow> custom({
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? description,
     Expression<String>? ownerId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
-    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -395,7 +351,6 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
       if (ownerId != null) 'owner_id': ownerId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -407,7 +362,6 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     Value<String>? ownerId,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
-    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return WorkspacesCompanion(
@@ -417,7 +371,6 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
       ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -443,9 +396,6 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -461,14 +411,14 @@ class WorkspacesCompanion extends UpdateCompanion<Workspace> {
           ..write('ownerId: $ownerId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
 }
 
-class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
+class $SectionsTable extends Sections
+    with TableInfo<$SectionsTable, SectionRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -511,8 +461,7 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -523,19 +472,7 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -544,7 +481,6 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
     title,
     createdAt,
     updatedAt,
-    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -553,7 +489,7 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
   static const String $name = 'sections';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Section> instance, {
+    Insertable<SectionRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -587,18 +523,16 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
     return context;
   }
@@ -606,9 +540,9 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Section map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SectionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Section(
+    return SectionRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -629,10 +563,6 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}deleted_at'],
-      ),
     );
   }
 
@@ -642,20 +572,18 @@ class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
   }
 }
 
-class Section extends DataClass implements Insertable<Section> {
+class SectionRow extends DataClass implements Insertable<SectionRow> {
   final String id;
   final String workspaceId;
   final String title;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
-  const Section({
+  const SectionRow({
     required this.id,
     required this.workspaceId,
     required this.title,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -665,9 +593,6 @@ class Section extends DataClass implements Insertable<Section> {
     map['title'] = Variable<String>(title);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt);
-    }
     return map;
   }
 
@@ -678,24 +603,20 @@ class Section extends DataClass implements Insertable<Section> {
       title: Value(title),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
     );
   }
 
-  factory Section.fromJson(
+  factory SectionRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Section(
+    return SectionRow(
       id: serializer.fromJson<String>(json['id']),
       workspaceId: serializer.fromJson<String>(json['workspaceId']),
       title: serializer.fromJson<String>(json['title']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -707,27 +628,24 @@ class Section extends DataClass implements Insertable<Section> {
       'title': serializer.toJson<String>(title),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
-  Section copyWith({
+  SectionRow copyWith({
     String? id,
     String? workspaceId,
     String? title,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Value<DateTime?> deletedAt = const Value.absent(),
-  }) => Section(
+  }) => SectionRow(
     id: id ?? this.id,
     workspaceId: workspaceId ?? this.workspaceId,
     title: title ?? this.title,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
-  Section copyWithCompanion(SectionsCompanion data) {
-    return Section(
+  SectionRow copyWithCompanion(SectionsCompanion data) {
+    return SectionRow(
       id: data.id.present ? data.id.value : this.id,
       workspaceId: data.workspaceId.present
           ? data.workspaceId.value
@@ -735,45 +653,40 @@ class Section extends DataClass implements Insertable<Section> {
       title: data.title.present ? data.title.value : this.title,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('Section(')
+    return (StringBuffer('SectionRow(')
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
           ..write('title: $title, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, workspaceId, title, createdAt, updatedAt, deletedAt);
+  int get hashCode => Object.hash(id, workspaceId, title, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Section &&
+      (other is SectionRow &&
           other.id == this.id &&
           other.workspaceId == this.workspaceId &&
           other.title == this.title &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.updatedAt == this.updatedAt);
 }
 
-class SectionsCompanion extends UpdateCompanion<Section> {
+class SectionsCompanion extends UpdateCompanion<SectionRow> {
   final Value<String> id;
   final Value<String> workspaceId;
   final Value<String> title;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
-  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const SectionsCompanion({
     this.id = const Value.absent(),
@@ -781,27 +694,26 @@ class SectionsCompanion extends UpdateCompanion<Section> {
     this.title = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SectionsCompanion.insert({
     required String id,
     required String workspaceId,
     required String title,
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workspaceId = Value(workspaceId),
-       title = Value(title);
-  static Insertable<Section> custom({
+       title = Value(title),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<SectionRow> custom({
     Expression<String>? id,
     Expression<String>? workspaceId,
     Expression<String>? title,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
-    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -810,7 +722,6 @@ class SectionsCompanion extends UpdateCompanion<Section> {
       if (title != null) 'title': title,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -821,7 +732,6 @@ class SectionsCompanion extends UpdateCompanion<Section> {
     Value<String>? title,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
-    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return SectionsCompanion(
@@ -830,7 +740,6 @@ class SectionsCompanion extends UpdateCompanion<Section> {
       title: title ?? this.title,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -853,9 +762,6 @@ class SectionsCompanion extends UpdateCompanion<Section> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -870,7 +776,6 @@ class SectionsCompanion extends UpdateCompanion<Section> {
           ..write('title: $title, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -878,7 +783,7 @@ class SectionsCompanion extends UpdateCompanion<Section> {
 }
 
 class $MemoryBoxesTable extends MemoryBoxes
-    with TableInfo<$MemoryBoxesTable, MemoryBoxe> {
+    with TableInfo<$MemoryBoxesTable, MemoryBoxRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -892,6 +797,17 @@ class $MemoryBoxesTable extends MemoryBoxes
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _sectionIdMeta = const VerificationMeta(
     'sectionId',
   );
@@ -899,9 +815,9 @@ class $MemoryBoxesTable extends MemoryBoxes
   late final GeneratedColumn<String> sectionId = GeneratedColumn<String>(
     'section_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -932,8 +848,7 @@ class $MemoryBoxesTable extends MemoryBoxes
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -944,29 +859,17 @@ class $MemoryBoxesTable extends MemoryBoxes
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    workspaceId,
     sectionId,
     title,
     description,
     createdAt,
     updatedAt,
-    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -975,7 +878,7 @@ class $MemoryBoxesTable extends MemoryBoxes
   static const String $name = 'memory_boxes';
   @override
   VerificationContext validateIntegrity(
-    Insertable<MemoryBoxe> instance, {
+    Insertable<MemoryBoxRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -985,13 +888,22 @@ class $MemoryBoxesTable extends MemoryBoxes
     } else if (isInserting) {
       context.missing(_idMeta);
     }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
     if (data.containsKey('section_id')) {
       context.handle(
         _sectionIdMeta,
         sectionId.isAcceptableOrUnknown(data['section_id']!, _sectionIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_sectionIdMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -1015,18 +927,16 @@ class $MemoryBoxesTable extends MemoryBoxes
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
     return context;
   }
@@ -1034,17 +944,21 @@ class $MemoryBoxesTable extends MemoryBoxes
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  MemoryBoxe map(Map<String, dynamic> data, {String? tablePrefix}) {
+  MemoryBoxRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return MemoryBoxe(
+    return MemoryBoxRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
       sectionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}section_id'],
-      )!,
+      ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -1061,10 +975,6 @@ class $MemoryBoxesTable extends MemoryBoxes
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}deleted_at'],
-      ),
     );
   }
 
@@ -1074,69 +984,69 @@ class $MemoryBoxesTable extends MemoryBoxes
   }
 }
 
-class MemoryBoxe extends DataClass implements Insertable<MemoryBoxe> {
+class MemoryBoxRow extends DataClass implements Insertable<MemoryBoxRow> {
   final String id;
-  final String sectionId;
+  final String workspaceId;
+  final String? sectionId;
   final String title;
   final String? description;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
-  const MemoryBoxe({
+  const MemoryBoxRow({
     required this.id,
-    required this.sectionId,
+    required this.workspaceId,
+    this.sectionId,
     required this.title,
     this.description,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['section_id'] = Variable<String>(sectionId);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || sectionId != null) {
+      map['section_id'] = Variable<String>(sectionId);
+    }
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt);
-    }
     return map;
   }
 
   MemoryBoxesCompanion toCompanion(bool nullToAbsent) {
     return MemoryBoxesCompanion(
       id: Value(id),
-      sectionId: Value(sectionId),
+      workspaceId: Value(workspaceId),
+      sectionId: sectionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sectionId),
       title: Value(title),
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
     );
   }
 
-  factory MemoryBoxe.fromJson(
+  factory MemoryBoxRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return MemoryBoxe(
+    return MemoryBoxRow(
       id: serializer.fromJson<String>(json['id']),
-      sectionId: serializer.fromJson<String>(json['sectionId']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      sectionId: serializer.fromJson<String?>(json['sectionId']),
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -1144,35 +1054,38 @@ class MemoryBoxe extends DataClass implements Insertable<MemoryBoxe> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'sectionId': serializer.toJson<String>(sectionId),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'sectionId': serializer.toJson<String?>(sectionId),
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
-  MemoryBoxe copyWith({
+  MemoryBoxRow copyWith({
     String? id,
-    String? sectionId,
+    String? workspaceId,
+    Value<String?> sectionId = const Value.absent(),
     String? title,
     Value<String?> description = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
-    Value<DateTime?> deletedAt = const Value.absent(),
-  }) => MemoryBoxe(
+  }) => MemoryBoxRow(
     id: id ?? this.id,
-    sectionId: sectionId ?? this.sectionId,
+    workspaceId: workspaceId ?? this.workspaceId,
+    sectionId: sectionId.present ? sectionId.value : this.sectionId,
     title: title ?? this.title,
     description: description.present ? description.value : this.description,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
-  MemoryBoxe copyWithCompanion(MemoryBoxesCompanion data) {
-    return MemoryBoxe(
+  MemoryBoxRow copyWithCompanion(MemoryBoxesCompanion data) {
+    return MemoryBoxRow(
       id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
       sectionId: data.sectionId.present ? data.sectionId.value : this.sectionId,
       title: data.title.present ? data.title.value : this.title,
       description: data.description.present
@@ -1180,20 +1093,19 @@ class MemoryBoxe extends DataClass implements Insertable<MemoryBoxe> {
           : this.description,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('MemoryBoxe(')
+    return (StringBuffer('MemoryBoxRow(')
           ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
           ..write('sectionId: $sectionId, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1201,97 +1113,99 @@ class MemoryBoxe extends DataClass implements Insertable<MemoryBoxe> {
   @override
   int get hashCode => Object.hash(
     id,
+    workspaceId,
     sectionId,
     title,
     description,
     createdAt,
     updatedAt,
-    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is MemoryBoxe &&
+      (other is MemoryBoxRow &&
           other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
           other.sectionId == this.sectionId &&
           other.title == this.title &&
           other.description == this.description &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.updatedAt == this.updatedAt);
 }
 
-class MemoryBoxesCompanion extends UpdateCompanion<MemoryBoxe> {
+class MemoryBoxesCompanion extends UpdateCompanion<MemoryBoxRow> {
   final Value<String> id;
-  final Value<String> sectionId;
+  final Value<String> workspaceId;
+  final Value<String?> sectionId;
   final Value<String> title;
   final Value<String?> description;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
-  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const MemoryBoxesCompanion({
     this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
     this.sectionId = const Value.absent(),
     this.title = const Value.absent(),
     this.description = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MemoryBoxesCompanion.insert({
     required String id,
-    required String sectionId,
+    required String workspaceId,
+    this.sectionId = const Value.absent(),
     required String title,
     this.description = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       sectionId = Value(sectionId),
-       title = Value(title);
-  static Insertable<MemoryBoxe> custom({
+       workspaceId = Value(workspaceId),
+       title = Value(title),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<MemoryBoxRow> custom({
     Expression<String>? id,
+    Expression<String>? workspaceId,
     Expression<String>? sectionId,
     Expression<String>? title,
     Expression<String>? description,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
-    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
       if (sectionId != null) 'section_id': sectionId,
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   MemoryBoxesCompanion copyWith({
     Value<String>? id,
-    Value<String>? sectionId,
+    Value<String>? workspaceId,
+    Value<String?>? sectionId,
     Value<String>? title,
     Value<String?>? description,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
-    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return MemoryBoxesCompanion(
       id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
       sectionId: sectionId ?? this.sectionId,
       title: title ?? this.title,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1301,6 +1215,9 @@ class MemoryBoxesCompanion extends UpdateCompanion<MemoryBoxe> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
     }
     if (sectionId.present) {
       map['section_id'] = Variable<String>(sectionId.value);
@@ -1317,9 +1234,6 @@ class MemoryBoxesCompanion extends UpdateCompanion<MemoryBoxe> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1330,19 +1244,19 @@ class MemoryBoxesCompanion extends UpdateCompanion<MemoryBoxe> {
   String toString() {
     return (StringBuffer('MemoryBoxesCompanion(')
           ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
           ..write('sectionId: $sectionId, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
 }
 
-class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
+class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1396,8 +1310,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(''),
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1408,8 +1321,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -1420,19 +1332,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -1443,7 +1343,6 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     content,
     createdAt,
     updatedAt,
-    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1452,7 +1351,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   static const String $name = 'notes';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Note> instance, {
+    Insertable<NoteRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1494,24 +1393,24 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         _contentMeta,
         content.isAcceptableOrUnknown(data['content']!, _contentMeta),
       );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
     return context;
   }
@@ -1519,9 +1418,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Note map(Map<String, dynamic> data, {String? tablePrefix}) {
+  NoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Note(
+    return NoteRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1550,10 +1449,6 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}deleted_at'],
-      ),
     );
   }
 
@@ -1563,7 +1458,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   }
 }
 
-class Note extends DataClass implements Insertable<Note> {
+class NoteRow extends DataClass implements Insertable<NoteRow> {
   final String id;
   final String memoryBoxId;
   final String authorId;
@@ -1571,8 +1466,7 @@ class Note extends DataClass implements Insertable<Note> {
   final String content;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
-  const Note({
+  const NoteRow({
     required this.id,
     required this.memoryBoxId,
     required this.authorId,
@@ -1580,7 +1474,6 @@ class Note extends DataClass implements Insertable<Note> {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1592,9 +1485,6 @@ class Note extends DataClass implements Insertable<Note> {
     map['content'] = Variable<String>(content);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt);
-    }
     return map;
   }
 
@@ -1607,18 +1497,15 @@ class Note extends DataClass implements Insertable<Note> {
       content: Value(content),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
     );
   }
 
-  factory Note.fromJson(
+  factory NoteRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Note(
+    return NoteRow(
       id: serializer.fromJson<String>(json['id']),
       memoryBoxId: serializer.fromJson<String>(json['memoryBoxId']),
       authorId: serializer.fromJson<String>(json['authorId']),
@@ -1626,7 +1513,6 @@ class Note extends DataClass implements Insertable<Note> {
       content: serializer.fromJson<String>(json['content']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -1640,11 +1526,10 @@ class Note extends DataClass implements Insertable<Note> {
       'content': serializer.toJson<String>(content),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
-  Note copyWith({
+  NoteRow copyWith({
     String? id,
     String? memoryBoxId,
     String? authorId,
@@ -1652,8 +1537,7 @@ class Note extends DataClass implements Insertable<Note> {
     String? content,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Value<DateTime?> deletedAt = const Value.absent(),
-  }) => Note(
+  }) => NoteRow(
     id: id ?? this.id,
     memoryBoxId: memoryBoxId ?? this.memoryBoxId,
     authorId: authorId ?? this.authorId,
@@ -1661,10 +1545,9 @@ class Note extends DataClass implements Insertable<Note> {
     content: content ?? this.content,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
-  Note copyWithCompanion(NotesCompanion data) {
-    return Note(
+  NoteRow copyWithCompanion(NotesCompanion data) {
+    return NoteRow(
       id: data.id.present ? data.id.value : this.id,
       memoryBoxId: data.memoryBoxId.present
           ? data.memoryBoxId.value
@@ -1674,21 +1557,19 @@ class Note extends DataClass implements Insertable<Note> {
       content: data.content.present ? data.content.value : this.content,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('Note(')
+    return (StringBuffer('NoteRow(')
           ..write('id: $id, ')
           ..write('memoryBoxId: $memoryBoxId, ')
           ..write('authorId: $authorId, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1702,23 +1583,21 @@ class Note extends DataClass implements Insertable<Note> {
     content,
     createdAt,
     updatedAt,
-    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Note &&
+      (other is NoteRow &&
           other.id == this.id &&
           other.memoryBoxId == this.memoryBoxId &&
           other.authorId == this.authorId &&
           other.title == this.title &&
           other.content == this.content &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.updatedAt == this.updatedAt);
 }
 
-class NotesCompanion extends UpdateCompanion<Note> {
+class NotesCompanion extends UpdateCompanion<NoteRow> {
   final Value<String> id;
   final Value<String> memoryBoxId;
   final Value<String> authorId;
@@ -1726,7 +1605,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<String> content;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
-  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const NotesCompanion({
     this.id = const Value.absent(),
@@ -1736,7 +1614,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.content = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   NotesCompanion.insert({
@@ -1744,16 +1621,18 @@ class NotesCompanion extends UpdateCompanion<Note> {
     required String memoryBoxId,
     required String authorId,
     required String title,
-    this.content = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
+    required String content,
+    required DateTime createdAt,
+    required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        memoryBoxId = Value(memoryBoxId),
        authorId = Value(authorId),
-       title = Value(title);
-  static Insertable<Note> custom({
+       title = Value(title),
+       content = Value(content),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<NoteRow> custom({
     Expression<String>? id,
     Expression<String>? memoryBoxId,
     Expression<String>? authorId,
@@ -1761,7 +1640,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? content,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
-    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1772,7 +1650,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (content != null) 'content': content,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1785,7 +1662,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<String>? content,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
-    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return NotesCompanion(
@@ -1796,7 +1672,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1825,9 +1700,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1844,7 +1716,6 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('content: $content, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1876,9 +1747,8 @@ typedef $$WorkspacesTableCreateCompanionBuilder =
       required String name,
       Value<String?> description,
       required String ownerId,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
+      required DateTime createdAt,
+      required DateTime updatedAt,
       Value<int> rowid,
     });
 typedef $$WorkspacesTableUpdateCompanionBuilder =
@@ -1889,7 +1759,6 @@ typedef $$WorkspacesTableUpdateCompanionBuilder =
       Value<String> ownerId,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -1929,11 +1798,6 @@ class $$WorkspacesTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1976,11 +1840,6 @@ class $$WorkspacesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$WorkspacesTableAnnotationComposer
@@ -2011,9 +1870,6 @@ class $$WorkspacesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
 
 class $$WorkspacesTableTableManager
@@ -2021,17 +1877,17 @@ class $$WorkspacesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $WorkspacesTable,
-          Workspace,
+          WorkspaceRow,
           $$WorkspacesTableFilterComposer,
           $$WorkspacesTableOrderingComposer,
           $$WorkspacesTableAnnotationComposer,
           $$WorkspacesTableCreateCompanionBuilder,
           $$WorkspacesTableUpdateCompanionBuilder,
           (
-            Workspace,
-            BaseReferences<_$AppDatabase, $WorkspacesTable, Workspace>,
+            WorkspaceRow,
+            BaseReferences<_$AppDatabase, $WorkspacesTable, WorkspaceRow>,
           ),
-          Workspace,
+          WorkspaceRow,
           PrefetchHooks Function()
         > {
   $$WorkspacesTableTableManager(_$AppDatabase db, $WorkspacesTable table)
@@ -2053,7 +1909,6 @@ class $$WorkspacesTableTableManager
                 Value<String> ownerId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkspacesCompanion(
                 id: id,
@@ -2062,7 +1917,6 @@ class $$WorkspacesTableTableManager
                 ownerId: ownerId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2071,9 +1925,8 @@ class $$WorkspacesTableTableManager
                 required String name,
                 Value<String?> description = const Value.absent(),
                 required String ownerId,
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => WorkspacesCompanion.insert(
                 id: id,
@@ -2082,7 +1935,6 @@ class $$WorkspacesTableTableManager
                 ownerId: ownerId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2097,14 +1949,17 @@ typedef $$WorkspacesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $WorkspacesTable,
-      Workspace,
+      WorkspaceRow,
       $$WorkspacesTableFilterComposer,
       $$WorkspacesTableOrderingComposer,
       $$WorkspacesTableAnnotationComposer,
       $$WorkspacesTableCreateCompanionBuilder,
       $$WorkspacesTableUpdateCompanionBuilder,
-      (Workspace, BaseReferences<_$AppDatabase, $WorkspacesTable, Workspace>),
-      Workspace,
+      (
+        WorkspaceRow,
+        BaseReferences<_$AppDatabase, $WorkspacesTable, WorkspaceRow>,
+      ),
+      WorkspaceRow,
       PrefetchHooks Function()
     >;
 typedef $$SectionsTableCreateCompanionBuilder =
@@ -2112,9 +1967,8 @@ typedef $$SectionsTableCreateCompanionBuilder =
       required String id,
       required String workspaceId,
       required String title,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
+      required DateTime createdAt,
+      required DateTime updatedAt,
       Value<int> rowid,
     });
 typedef $$SectionsTableUpdateCompanionBuilder =
@@ -2124,7 +1978,6 @@ typedef $$SectionsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -2159,11 +2012,6 @@ class $$SectionsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2201,11 +2049,6 @@ class $$SectionsTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$SectionsTableAnnotationComposer
@@ -2233,9 +2076,6 @@ class $$SectionsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
 
 class $$SectionsTableTableManager
@@ -2243,14 +2083,17 @@ class $$SectionsTableTableManager
         RootTableManager<
           _$AppDatabase,
           $SectionsTable,
-          Section,
+          SectionRow,
           $$SectionsTableFilterComposer,
           $$SectionsTableOrderingComposer,
           $$SectionsTableAnnotationComposer,
           $$SectionsTableCreateCompanionBuilder,
           $$SectionsTableUpdateCompanionBuilder,
-          (Section, BaseReferences<_$AppDatabase, $SectionsTable, Section>),
-          Section,
+          (
+            SectionRow,
+            BaseReferences<_$AppDatabase, $SectionsTable, SectionRow>,
+          ),
+          SectionRow,
           PrefetchHooks Function()
         > {
   $$SectionsTableTableManager(_$AppDatabase db, $SectionsTable table)
@@ -2271,7 +2114,6 @@ class $$SectionsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SectionsCompanion(
                 id: id,
@@ -2279,7 +2121,6 @@ class $$SectionsTableTableManager
                 title: title,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2287,9 +2128,8 @@ class $$SectionsTableTableManager
                 required String id,
                 required String workspaceId,
                 required String title,
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => SectionsCompanion.insert(
                 id: id,
@@ -2297,7 +2137,6 @@ class $$SectionsTableTableManager
                 title: title,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2312,36 +2151,36 @@ typedef $$SectionsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $SectionsTable,
-      Section,
+      SectionRow,
       $$SectionsTableFilterComposer,
       $$SectionsTableOrderingComposer,
       $$SectionsTableAnnotationComposer,
       $$SectionsTableCreateCompanionBuilder,
       $$SectionsTableUpdateCompanionBuilder,
-      (Section, BaseReferences<_$AppDatabase, $SectionsTable, Section>),
-      Section,
+      (SectionRow, BaseReferences<_$AppDatabase, $SectionsTable, SectionRow>),
+      SectionRow,
       PrefetchHooks Function()
     >;
 typedef $$MemoryBoxesTableCreateCompanionBuilder =
     MemoryBoxesCompanion Function({
       required String id,
-      required String sectionId,
+      required String workspaceId,
+      Value<String?> sectionId,
       required String title,
       Value<String?> description,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
+      required DateTime createdAt,
+      required DateTime updatedAt,
       Value<int> rowid,
     });
 typedef $$MemoryBoxesTableUpdateCompanionBuilder =
     MemoryBoxesCompanion Function({
       Value<String> id,
-      Value<String> sectionId,
+      Value<String> workspaceId,
+      Value<String?> sectionId,
       Value<String> title,
       Value<String?> description,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -2356,6 +2195,11 @@ class $$MemoryBoxesTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2383,11 +2227,6 @@ class $$MemoryBoxesTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
 }
 
 class $$MemoryBoxesTableOrderingComposer
@@ -2401,6 +2240,11 @@ class $$MemoryBoxesTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2428,11 +2272,6 @@ class $$MemoryBoxesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$MemoryBoxesTableAnnotationComposer
@@ -2446,6 +2285,11 @@ class $$MemoryBoxesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get sectionId =>
       $composableBuilder(column: $table.sectionId, builder: (column) => column);
@@ -2463,9 +2307,6 @@ class $$MemoryBoxesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
 
 class $$MemoryBoxesTableTableManager
@@ -2473,17 +2314,17 @@ class $$MemoryBoxesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $MemoryBoxesTable,
-          MemoryBoxe,
+          MemoryBoxRow,
           $$MemoryBoxesTableFilterComposer,
           $$MemoryBoxesTableOrderingComposer,
           $$MemoryBoxesTableAnnotationComposer,
           $$MemoryBoxesTableCreateCompanionBuilder,
           $$MemoryBoxesTableUpdateCompanionBuilder,
           (
-            MemoryBoxe,
-            BaseReferences<_$AppDatabase, $MemoryBoxesTable, MemoryBoxe>,
+            MemoryBoxRow,
+            BaseReferences<_$AppDatabase, $MemoryBoxesTable, MemoryBoxRow>,
           ),
-          MemoryBoxe,
+          MemoryBoxRow,
           PrefetchHooks Function()
         > {
   $$MemoryBoxesTableTableManager(_$AppDatabase db, $MemoryBoxesTable table)
@@ -2500,41 +2341,41 @@ class $$MemoryBoxesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> sectionId = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String?> sectionId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MemoryBoxesCompanion(
                 id: id,
+                workspaceId: workspaceId,
                 sectionId: sectionId,
                 title: title,
                 description: description,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String id,
-                required String sectionId,
+                required String workspaceId,
+                Value<String?> sectionId = const Value.absent(),
                 required String title,
                 Value<String?> description = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => MemoryBoxesCompanion.insert(
                 id: id,
+                workspaceId: workspaceId,
                 sectionId: sectionId,
                 title: title,
                 description: description,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2549,17 +2390,17 @@ typedef $$MemoryBoxesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $MemoryBoxesTable,
-      MemoryBoxe,
+      MemoryBoxRow,
       $$MemoryBoxesTableFilterComposer,
       $$MemoryBoxesTableOrderingComposer,
       $$MemoryBoxesTableAnnotationComposer,
       $$MemoryBoxesTableCreateCompanionBuilder,
       $$MemoryBoxesTableUpdateCompanionBuilder,
       (
-        MemoryBoxe,
-        BaseReferences<_$AppDatabase, $MemoryBoxesTable, MemoryBoxe>,
+        MemoryBoxRow,
+        BaseReferences<_$AppDatabase, $MemoryBoxesTable, MemoryBoxRow>,
       ),
-      MemoryBoxe,
+      MemoryBoxRow,
       PrefetchHooks Function()
     >;
 typedef $$NotesTableCreateCompanionBuilder =
@@ -2568,10 +2409,9 @@ typedef $$NotesTableCreateCompanionBuilder =
       required String memoryBoxId,
       required String authorId,
       required String title,
-      Value<String> content,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
+      required String content,
+      required DateTime createdAt,
+      required DateTime updatedAt,
       Value<int> rowid,
     });
 typedef $$NotesTableUpdateCompanionBuilder =
@@ -2583,7 +2423,6 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String> content,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -2627,11 +2466,6 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2679,11 +2513,6 @@ class $$NotesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$NotesTableAnnotationComposer
@@ -2717,9 +2546,6 @@ class $$NotesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
 
 class $$NotesTableTableManager
@@ -2727,14 +2553,14 @@ class $$NotesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $NotesTable,
-          Note,
+          NoteRow,
           $$NotesTableFilterComposer,
           $$NotesTableOrderingComposer,
           $$NotesTableAnnotationComposer,
           $$NotesTableCreateCompanionBuilder,
           $$NotesTableUpdateCompanionBuilder,
-          (Note, BaseReferences<_$AppDatabase, $NotesTable, Note>),
-          Note,
+          (NoteRow, BaseReferences<_$AppDatabase, $NotesTable, NoteRow>),
+          NoteRow,
           PrefetchHooks Function()
         > {
   $$NotesTableTableManager(_$AppDatabase db, $NotesTable table)
@@ -2757,7 +2583,6 @@ class $$NotesTableTableManager
                 Value<String> content = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NotesCompanion(
                 id: id,
@@ -2767,7 +2592,6 @@ class $$NotesTableTableManager
                 content: content,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2776,10 +2600,9 @@ class $$NotesTableTableManager
                 required String memoryBoxId,
                 required String authorId,
                 required String title,
-                Value<String> content = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
+                required String content,
+                required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => NotesCompanion.insert(
                 id: id,
@@ -2789,7 +2612,6 @@ class $$NotesTableTableManager
                 content: content,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2804,14 +2626,14 @@ typedef $$NotesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $NotesTable,
-      Note,
+      NoteRow,
       $$NotesTableFilterComposer,
       $$NotesTableOrderingComposer,
       $$NotesTableAnnotationComposer,
       $$NotesTableCreateCompanionBuilder,
       $$NotesTableUpdateCompanionBuilder,
-      (Note, BaseReferences<_$AppDatabase, $NotesTable, Note>),
-      Note,
+      (NoteRow, BaseReferences<_$AppDatabase, $NotesTable, NoteRow>),
+      NoteRow,
       PrefetchHooks Function()
     >;
 

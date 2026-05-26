@@ -9,20 +9,26 @@ class MemoryBoxesRepositoryImpl implements MemoryBoxesRepository {
   MemoryBoxesRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<List<MemoryBoxEntity>> getMemoryBoxes(String sectionId) {
-    return remoteDataSource.getMemoryBoxes(sectionId);
+  Future<List<MemoryBoxEntity>> getMemoryBoxes({
+    required String workspaceId,
+    String? sectionId,
+  }) {
+    return remoteDataSource.getMemoryBoxes(
+      workspaceId: workspaceId,
+      sectionId: sectionId,
+    );
   }
 
   @override
   Future<void> createMemoryBox({required MemoryBoxEntity memoryBox}) async {
     final model = MemoryBoxModel(
       id: memoryBox.id,
+      workspaceId: memoryBox.workspaceId,
       sectionId: memoryBox.sectionId,
       title: memoryBox.title,
       description: memoryBox.description,
       createdAt: memoryBox.createdAt,
       updatedAt: memoryBox.updatedAt,
-      deletedAt: memoryBox.deletedAt,
     );
 
     await remoteDataSource.createMemoryBox(model);

@@ -30,7 +30,6 @@ class WorkspacesRepositoryImpl implements WorkspacesRepository {
       ownerId: workspace.ownerId,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
-      deletedAt: workspace.deletedAt,
     );
 
     await remoteDataSource.createWorkspace(

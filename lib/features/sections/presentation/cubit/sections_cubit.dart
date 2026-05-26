@@ -47,7 +47,6 @@ class SectionsCubit extends Cubit<SectionsState> {
             title: newTitle.trim(),
             createdAt: section.createdAt,
             updatedAt: DateTime.now().toUtc(),
-            deletedAt: section.deletedAt,
           );
         }
         return section;

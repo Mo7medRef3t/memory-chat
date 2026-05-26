@@ -31,7 +31,11 @@ class MemoryBoxListPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => sl<MemoryBoxesCubit>()..loadMemoryBoxes(sectionId),
+          create: (_) => sl<MemoryBoxesCubit>()
+            ..loadMemoryBoxes(
+              workspaceId: workspaceId,
+              sectionId: sectionId, // ممكن يكون null لو في الـ Root
+            ),
         ),
         BlocProvider(create: (_) => sl<CreateMemoryBoxCubit>()),
       ],
@@ -60,7 +64,10 @@ class _MemoryBoxListView extends StatelessWidget {
     return BlocListener<CreateMemoryBoxCubit, CreateMemoryBoxState>(
       listener: (context, state) {
         if (state.status == CreateMemoryBoxStatus.success) {
-          context.read<MemoryBoxesCubit>().loadMemoryBoxes(sectionId);
+          context.read<MemoryBoxesCubit>().loadMemoryBoxes(
+            workspaceId: workspaceId,
+            sectionId: sectionId,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Memory box created successfully')),
           );
@@ -121,9 +128,7 @@ class _MemoryBoxListView extends StatelessWidget {
                             box.description,
                           );
                         } else if (value == 'delete') {
-                          context.read<MemoryBoxesCubit>().deleteMemoryBox(
-                            box.id,
-                          );
+                          _showDeleteConfirmationDialog(context, box.id);
                         }
                       },
                       itemBuilder: (context) => const [
@@ -208,6 +213,7 @@ class _MemoryBoxListView extends StatelessWidget {
                           await context
                               .read<CreateMemoryBoxCubit>()
                               .createMemoryBox(
+                                workspaceId: workspaceId, // ✅ ضفناها هنا
                                 sectionId: sectionId,
                                 title: titleController.text,
                                 description: descriptionController.text,
@@ -295,6 +301,33 @@ class _MemoryBoxListView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  // ✅ Confirmation Dialog للـ Hard Delete
+  void _showDeleteConfirmationDialog(BuildContext context, String memoryBoxId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Memory Box'),
+        content: const Text(
+          'Are you sure you want to delete this memory box? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<MemoryBoxesCubit>().deleteMemoryBox(memoryBoxId);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

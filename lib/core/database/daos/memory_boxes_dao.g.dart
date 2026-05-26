@@ -1,16 +1,16 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'memory_box_dao.dart';
+part of 'memory_boxes_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$MemoryBoxDaoMixin on DatabaseAccessor<AppDatabase> {
+mixin _$MemoryBoxesDaoMixin on DatabaseAccessor<AppDatabase> {
   $MemoryBoxesTable get memoryBoxes => attachedDatabase.memoryBoxes;
-  MemoryBoxDaoManager get managers => MemoryBoxDaoManager(this);
+  MemoryBoxesDaoManager get managers => MemoryBoxesDaoManager(this);
 }
 
-class MemoryBoxDaoManager {
-  final _$MemoryBoxDaoMixin _db;
-  MemoryBoxDaoManager(this._db);
+class MemoryBoxesDaoManager {
+  final _$MemoryBoxesDaoMixin _db;
+  MemoryBoxesDaoManager(this._db);
   $$MemoryBoxesTableTableManager get memoryBoxes =>
       $$MemoryBoxesTableTableManager(_db.attachedDatabase, _db.memoryBoxes);
 }

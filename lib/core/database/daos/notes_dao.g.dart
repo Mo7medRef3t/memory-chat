@@ -1,16 +1,16 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'note_dao.dart';
+part of 'notes_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$NoteDaoMixin on DatabaseAccessor<AppDatabase> {
+mixin _$NotesDaoMixin on DatabaseAccessor<AppDatabase> {
   $NotesTable get notes => attachedDatabase.notes;
-  NoteDaoManager get managers => NoteDaoManager(this);
+  NotesDaoManager get managers => NotesDaoManager(this);
 }
 
-class NoteDaoManager {
-  final _$NoteDaoMixin _db;
-  NoteDaoManager(this._db);
+class NotesDaoManager {
+  final _$NotesDaoMixin _db;
+  NotesDaoManager(this._db);
   $$NotesTableTableManager get notes =>
       $$NotesTableTableManager(_db.attachedDatabase, _db.notes);
 }

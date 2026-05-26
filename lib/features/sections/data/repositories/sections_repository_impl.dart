@@ -21,7 +21,6 @@ class SectionsRepositoryImpl implements SectionsRepository {
       title: section.title,
       createdAt: section.createdAt,
       updatedAt: section.updatedAt,
-      deletedAt: section.deletedAt,
     );
 
     await remoteDataSource.createSection(model);

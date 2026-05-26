@@ -6,13 +6,21 @@ class MemoryBoxesRemoteDataSource {
 
   MemoryBoxesRemoteDataSource(this.client);
 
-  Future<List<MemoryBoxModel>> getMemoryBoxes(String sectionId) async {
-    final response = await client
-        .from('memory_boxes')
-        .select()
-        .eq('section_id', sectionId)
-        .isFilter('deleted_at', null)
-        .order('created_at', ascending: true);
+  Future<List<MemoryBoxModel>> getMemoryBoxes({
+    required String workspaceId,
+    String? sectionId,
+  }) async {
+    var query = client.from('memory_boxes').select();
+
+    if (sectionId != null) {
+      query = query.eq('section_id', sectionId);
+    } else {
+      query = query
+          .eq('workspace_id', workspaceId)
+          .isFilter('section_id', null);
+    }
+
+    final response = await query.order('created_at', ascending: true);
 
     return (response as List)
         .map((json) => MemoryBoxModel.fromJson(json))
@@ -41,9 +49,6 @@ class MemoryBoxesRemoteDataSource {
   }
 
   Future<void> deleteMemoryBox(String memoryBoxId) async {
-    await client
-        .from('memory_boxes')
-        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
-        .eq('id', memoryBoxId);
+    await client.from('memory_boxes').delete().eq('id', memoryBoxId);
   }
 }

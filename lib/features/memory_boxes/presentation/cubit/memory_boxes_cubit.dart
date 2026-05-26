@@ -17,11 +17,17 @@ class MemoryBoxesCubit extends Cubit<MemoryBoxesState> {
     required this.deleteMemoryBoxUseCase,
   }) : super(const MemoryBoxesState());
 
-  Future<void> loadMemoryBoxes(String sectionId) async {
+  Future<void> loadMemoryBoxes({
+    required String workspaceId,
+    String? sectionId, // null = load root boxes
+  }) async {
     emit(state.copyWith(status: MemoryBoxesStatus.loading));
 
     try {
-      final memoryBoxes = await getMemoryBoxesUseCase(sectionId);
+      final memoryBoxes = await getMemoryBoxesUseCase(
+        workspaceId: workspaceId,
+        sectionId: sectionId,
+      );
       emit(
         state.copyWith(
           status: MemoryBoxesStatus.success,
@@ -54,6 +60,7 @@ class MemoryBoxesCubit extends Cubit<MemoryBoxesState> {
         if (box.id == memoryBoxId) {
           return MemoryBoxEntity(
             id: box.id,
+            workspaceId: box.workspaceId,
             sectionId: box.sectionId,
             title: title.trim(),
             description: description?.trim().isEmpty == true
@@ -61,7 +68,6 @@ class MemoryBoxesCubit extends Cubit<MemoryBoxesState> {
                 : description?.trim(),
             createdAt: box.createdAt,
             updatedAt: DateTime.now().toUtc(),
-            deletedAt: box.deletedAt,
           );
         }
         return box;

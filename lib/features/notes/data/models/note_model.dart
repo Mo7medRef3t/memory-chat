@@ -9,7 +9,6 @@ class NoteModel extends NoteEntity {
     required super.content,
     required super.createdAt,
     required super.updatedAt,
-    super.deletedAt,
   });
 
   factory NoteModel.fromJson(Map<String, dynamic> json) {
@@ -21,9 +20,6 @@ class NoteModel extends NoteEntity {
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'] as String)
-          : null,
     );
   }
 
@@ -36,7 +32,6 @@ class NoteModel extends NoteEntity {
       'content': content,
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
-      'deleted_at': deletedAt?.toUtc().toIso8601String(),
     };
   }
 }

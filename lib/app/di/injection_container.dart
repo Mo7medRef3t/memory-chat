@@ -56,7 +56,10 @@ import 'package:memory_chat/features/notes/domain/usecases/get_notes_usecase.dar
 import 'package:memory_chat/features/notes/domain/usecases/update_note_usecase.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
-
+import 'package:memory_chat/core/database/daos/workspaces_dao.dart';
+import 'package:memory_chat/core/database/daos/sections_dao.dart';
+import 'package:memory_chat/core/database/daos/memory_boxes_dao.dart';
+import 'package:memory_chat/core/database/daos/notes_dao.dart';
 
 final sl = GetIt.instance;
 
@@ -230,5 +233,8 @@ Future<void> configureDependencies() async {
   );
 
   sl.registerLazySingleton<AppDatabase>(() => AppDatabase());
-
+  sl.registerLazySingleton<WorkspacesDao>(() => WorkspacesDao(sl()));
+  sl.registerLazySingleton<SectionsDao>(() => SectionsDao(sl()));
+  sl.registerLazySingleton<MemoryBoxesDao>(() => MemoryBoxesDao(sl()));
+  sl.registerLazySingleton<NotesDao>(() => NotesDao(sl()));
 }

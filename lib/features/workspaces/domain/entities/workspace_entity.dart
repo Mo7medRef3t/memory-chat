@@ -7,7 +7,6 @@ class WorkspaceEntity extends Equatable {
   final String ownerId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
 
   const WorkspaceEntity({
     required this.id,
@@ -16,7 +15,6 @@ class WorkspaceEntity extends Equatable {
     required this.ownerId,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
 
   @override
@@ -27,6 +25,5 @@ class WorkspaceEntity extends Equatable {
     ownerId,
     createdAt,
     updatedAt,
-    deletedAt,
   ];
 }

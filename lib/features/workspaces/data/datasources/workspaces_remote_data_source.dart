@@ -10,7 +10,6 @@ class WorkspacesRemoteDataSource {
     final response = await client
         .from('workspaces')
         .select()
-        .isFilter('deleted_at', null)
         .order('created_at', ascending: true);
 
     return (response as List)

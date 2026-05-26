@@ -4,24 +4,19 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-import 'tables/workspace_table.dart';
-import 'tables/section_table.dart';
-import 'tables/memory_box_table.dart';
-import 'tables/note_table.dart';
-
-import 'daos/workspace_dao.dart';
-import 'daos/section_dao.dart';
-import 'daos/memory_box_dao.dart';
-import 'daos/note_dao.dart';
+import 'tables/workspaces_table.dart';
+import 'tables/sections_table.dart';
+import 'tables/memory_boxes_table.dart';
+import 'tables/notes_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(
-  tables: [Workspaces, Sections, MemoryBoxes, Notes,],
-  daos: [WorkspaceDao, SectionDao, MemoryBoxDao, NoteDao],
-)
+@DriftDatabase(tables: [Workspaces, Sections, MemoryBoxes, Notes])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+
+  // For testing only
+  AppDatabase.forTesting(super.e);
 
   @override
   int get schemaVersion => 1;
@@ -33,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Future schema migrations will go here
+        // Handle future migrations here
       },
     );
   }

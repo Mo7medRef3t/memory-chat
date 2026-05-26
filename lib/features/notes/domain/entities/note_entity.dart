@@ -8,7 +8,6 @@ class NoteEntity extends Equatable {
   final String content;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
 
   const NoteEntity({
     required this.id,
@@ -18,7 +17,6 @@ class NoteEntity extends Equatable {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
 
   @override
@@ -30,6 +28,5 @@ class NoteEntity extends Equatable {
     content,
     createdAt,
     updatedAt,
-    deletedAt,
   ];
 }

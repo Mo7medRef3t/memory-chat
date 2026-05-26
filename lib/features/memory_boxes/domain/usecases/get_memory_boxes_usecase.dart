@@ -6,7 +6,13 @@ class GetMemoryBoxesUseCase {
 
   GetMemoryBoxesUseCase(this.repository);
 
-  Future<List<MemoryBoxEntity>> call(String sectionId) {
-    return repository.getMemoryBoxes(sectionId);
+  Future<List<MemoryBoxEntity>> call({
+    required String workspaceId,
+    String? sectionId, 
+  }) {
+    return repository.getMemoryBoxes(
+      workspaceId: workspaceId,
+      sectionId: sectionId,
+    );
   }
 }
