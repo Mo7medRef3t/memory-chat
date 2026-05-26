@@ -70,18 +70,6 @@ class _WorkspaceDetailsView extends StatelessWidget {
           ),
           title: Text(workspaceName ?? 'Workspace'),
           centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.chat),
-              onPressed: () {
-                context.goNamed(
-                  'workspaceChat',
-                  pathParameters: {'workspaceId': workspaceId},
-                  extra: workspaceName,
-                );
-              },
-            ),
-          ],
         ),
         body: BlocBuilder<SectionsCubit, SectionsState>(
           builder: (context, state) {

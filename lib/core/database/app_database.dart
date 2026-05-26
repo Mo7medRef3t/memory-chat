@@ -8,19 +8,17 @@ import 'tables/workspace_table.dart';
 import 'tables/section_table.dart';
 import 'tables/memory_box_table.dart';
 import 'tables/note_table.dart';
-import 'tables/message_table.dart';
 
 import 'daos/workspace_dao.dart';
 import 'daos/section_dao.dart';
 import 'daos/memory_box_dao.dart';
 import 'daos/note_dao.dart';
-import 'daos/message_dao.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Workspaces, Sections, MemoryBoxes, Notes, Messages],
-  daos: [WorkspaceDao, SectionDao, MemoryBoxDao, NoteDao, MessageDao],
+  tables: [Workspaces, Sections, MemoryBoxes, Notes,],
+  daos: [WorkspaceDao, SectionDao, MemoryBoxDao, NoteDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
