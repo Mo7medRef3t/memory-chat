@@ -5,6 +5,7 @@ class RouteNames {
   static const String workspaceList = '/workspaceList';
   static const String workspaceDetails = '/workspaceDetails';
   static const memoryBoxList = 'memoryBoxList';
+  static const String rootMemoryBoxNotes = 'rootMemoryBoxNotes';
   static const noteList = 'noteList';
   static const noteEditor = 'noteEditor';
 }

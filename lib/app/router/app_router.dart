@@ -111,6 +111,25 @@ class AppRouter {
           );
         },
       ),
+
+      GoRoute(
+  path: '/workspaces/:workspaceId/memory-boxes/:memoryBoxId/notes',
+  name: RouteNames.rootMemoryBoxNotes,
+  builder: (context, state) {
+    final workspaceId = state.pathParameters['workspaceId']!;
+    final memoryBoxId = state.pathParameters['memoryBoxId']!;
+    final extra = state.extra as Map<String, dynamic>?;
+
+    return NoteListPage(
+      workspaceId: workspaceId,
+      sectionId: '', // مش هنستخدمه
+      memoryBoxId: memoryBoxId,
+      memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
+      sectionTitle: null,
+    );
+  },
+),
+      
       GoRoute(
         path:
             '/workspaces/:workspaceId/sections/:sectionId/memory-boxes/:memoryBoxId/notes/editor',

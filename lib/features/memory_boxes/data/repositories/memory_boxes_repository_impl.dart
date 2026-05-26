@@ -51,4 +51,17 @@ class MemoryBoxesRepositoryImpl implements MemoryBoxesRepository {
   Future<void> deleteMemoryBox({required String memoryBoxId}) {
     return remoteDataSource.deleteMemoryBox(memoryBoxId);
   }
+
+  @override
+  Future<void> moveMemoryBox({
+    required String memoryBoxId,
+    required String workspaceId,
+    String? newSectionId,
+  }) {
+    return remoteDataSource.moveMemoryBox(
+      memoryBoxId: memoryBoxId,
+      workspaceId: workspaceId,
+      newSectionId: newSectionId,
+    );
+  }
 }

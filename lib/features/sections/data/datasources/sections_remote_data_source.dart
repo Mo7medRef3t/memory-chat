@@ -11,7 +11,6 @@ class SectionsRemoteDataSource {
         .from('sections')
         .select()
         .eq('workspace_id', workspaceId)
-        .isFilter('deleted_at', null)
         .order('created_at', ascending: true);
 
     return (response as List)
@@ -37,9 +36,6 @@ class SectionsRemoteDataSource {
   }
 
   Future<void> deleteSection(String sectionId) async {
-    await client
-        .from('sections')
-        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
-        .eq('id', sectionId);
+    await client.from('sections').delete().eq('id', sectionId);
   }
 }

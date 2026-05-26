@@ -13,6 +13,7 @@ class NoteListPage extends StatelessWidget {
   final String memoryBoxId;
   final String? memoryBoxTitle;
   final String? sectionTitle;
+  final bool isRootBox; 
 
   const NoteListPage({
     super.key,
@@ -21,6 +22,7 @@ class NoteListPage extends StatelessWidget {
     required this.memoryBoxId,
     this.memoryBoxTitle,
     this.sectionTitle,
+    this.isRootBox = false, 
   });
 
   @override
@@ -32,6 +34,7 @@ class NoteListPage extends StatelessWidget {
         sectionId: sectionId,
         memoryBoxId: memoryBoxId,
         memoryBoxTitle: memoryBoxTitle,
+        isRootBox: isRootBox,
       ),
     );
   }
@@ -42,12 +45,14 @@ class _NoteListView extends StatelessWidget {
   final String sectionId;
   final String memoryBoxId;
   final String? memoryBoxTitle;
+  final bool isRootBox;
 
   const _NoteListView({
     required this.workspaceId,
     required this.sectionId,
     required this.memoryBoxId,
     this.memoryBoxTitle,
+    this.isRootBox = false,
   });
 
   @override
@@ -57,15 +62,24 @@ class _NoteListView extends StatelessWidget {
         title: Text(memoryBoxTitle ?? 'Notes'),
         centerTitle: true,
         leading: BackButton(
-          onPressed: () => context.goNamed(
-            RouteNames.memoryBoxList,
-            pathParameters: {
-              'workspaceId': workspaceId,
-              'sectionId': sectionId,
-            },
+          onPressed: () {
+          if (isRootBox) {
+            context.goNamed(
+              RouteNames.workspaceDetails,
+              pathParameters: {'workspaceId': workspaceId},
+            );
+          } else {
+            context.goNamed(
+              RouteNames.memoryBoxList,
+              pathParameters: {
+                'workspaceId': workspaceId,
+                'sectionId': sectionId,
+              },
+            );
+          }
+        },
           ),
         ),
-      ),
       body: BlocBuilder<NotesCubit, NotesState>(
         builder: (context, state) {
           if (state.status == NotesStatus.loading) {

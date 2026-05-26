@@ -1,5 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:memory_chat/core/database/app_database.dart';
+import 'package:memory_chat/core/database/daos/memory_boxes_dao.dart';
+import 'package:memory_chat/features/memory_boxes/domain/usecases/move_memory_box_usecase.dart';
 import 'package:memory_chat/features/workspaces/domain/usecases/delete_workspace_usecase.dart';
 import 'package:memory_chat/features/workspaces/domain/usecases/update_workspace_usecase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -60,7 +62,6 @@ import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.
 import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
 import 'package:memory_chat/core/database/daos/workspaces_dao.dart';
 import 'package:memory_chat/core/database/daos/sections_dao.dart';
-import 'package:memory_chat/core/database/daos/memory_boxes_dao.dart';
 import 'package:memory_chat/core/database/daos/notes_dao.dart';
 
 final sl = GetIt.instance;
@@ -194,11 +195,16 @@ Future<void> configureDependencies() async {
     () => DeleteMemoryBoxUseCase(sl<MemoryBoxesRepository>()),
   );
 
+  sl.registerLazySingleton(
+    () => MoveMemoryBoxUseCase(sl<MemoryBoxesRepository>()),
+  );
+
   sl.registerFactory(
     () => MemoryBoxesCubit(
       getMemoryBoxesUseCase: sl<GetMemoryBoxesUseCase>(),
       updateMemoryBoxUseCase: sl<UpdateMemoryBoxUseCase>(),
       deleteMemoryBoxUseCase: sl<DeleteMemoryBoxUseCase>(),
+      moveMemoryBoxUseCase: sl<MoveMemoryBoxUseCase>(), // ✅ جديد
     ),
   );
 

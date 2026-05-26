@@ -15,4 +15,10 @@ abstract class MemoryBoxesRepository {
   });
 
   Future<void> deleteMemoryBox({required String memoryBoxId});
+
+  Future<void> moveMemoryBox({
+    required String memoryBoxId,
+    required String workspaceId,
+    String? newSectionId,
+  });
 }

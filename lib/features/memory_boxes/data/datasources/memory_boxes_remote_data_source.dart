@@ -51,4 +51,19 @@ class MemoryBoxesRemoteDataSource {
   Future<void> deleteMemoryBox(String memoryBoxId) async {
     await client.from('memory_boxes').delete().eq('id', memoryBoxId);
   }
+
+  Future<void> moveMemoryBox({
+    required String memoryBoxId,
+    required String workspaceId,
+    String? newSectionId,
+  }) async {
+    await client
+        .from('memory_boxes')
+        .update({
+          'workspace_id': workspaceId,
+          'section_id': newSectionId,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', memoryBoxId);
+  }
 }
