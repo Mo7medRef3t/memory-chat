@@ -1,5 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:memory_chat/core/database/app_database.dart';
+import 'package:memory_chat/features/workspaces/domain/usecases/delete_workspace_usecase.dart';
+import 'package:memory_chat/features/workspaces/domain/usecases/update_workspace_usecase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -114,8 +116,16 @@ Future<void> configureDependencies() async {
     () => CreateWorkspaceUseCase(sl<WorkspacesRepository>()),
   );
 
-  sl.registerFactory(() => WorkspaceListCubit(sl<GetUserWorkspacesUseCase>()));
+  sl.registerLazySingleton(() => UpdateWorkspaceUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteWorkspaceUseCase(sl()));
 
+  sl.registerFactory(
+    () => WorkspaceListCubit(
+      getUserWorkspacesUseCase: sl(),
+      updateWorkspaceUseCase: sl(),
+      deleteWorkspaceUseCase: sl(),
+    ),
+  );
   sl.registerFactory(
     () => CreateWorkspaceCubit(
       createWorkspaceUseCase: sl<CreateWorkspaceUseCase>(),

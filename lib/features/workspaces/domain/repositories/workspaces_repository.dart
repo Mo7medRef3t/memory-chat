@@ -7,4 +7,12 @@ abstract class WorkspacesRepository {
     required WorkspaceEntity workspace,
     required String currentUserId,
   });
+
+  Future<void> updateWorkspace({
+    required String workspaceId,
+    required String name,
+    String? description,
+  });
+
+  Future<void> deleteWorkspace({required String workspaceId});
 }

@@ -38,4 +38,22 @@ class WorkspacesRepositoryImpl implements WorkspacesRepository {
       currentUserId: currentUserId,
     );
   }
+
+  @override
+  Future<void> updateWorkspace({
+    required String workspaceId,
+    required String name,
+    String? description,
+  }) {
+    return remoteDataSource.updateWorkspace(
+      workspaceId: workspaceId,
+      name: name,
+      description: description,
+    );
+  }
+
+  @override
+  Future<void> deleteWorkspace({required String workspaceId}) {
+    return remoteDataSource.deleteWorkspace(workspaceId);
+  }
 }

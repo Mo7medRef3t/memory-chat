@@ -32,4 +32,25 @@ class WorkspacesRemoteDataSource {
       'joined_at': DateTime.now().toUtc().toIso8601String(),
     });
   }
+
+  Future<void> updateWorkspace({
+    required String workspaceId,
+    required String name,
+    String? description,
+  }) async {
+    await client
+        .from('workspaces')
+        .update({
+          'name': name.trim(),
+          'description': description?.trim().isEmpty == true
+              ? null
+              : description?.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', workspaceId);
+  }
+
+  Future<void> deleteWorkspace(String workspaceId) async {
+    await client.from('workspaces').delete().eq('id', workspaceId);
+  }
 }

@@ -91,12 +91,42 @@ class _WorkspaceListView extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final workspace = state.workspaces[index];
+                final isOwner =
+                    workspace.ownerId == currentUserId; // ✅ التحقق من الـ Owner
 
                 return Card(
                   child: ListTile(
                     title: Text(workspace.name),
                     subtitle: Text(workspace.description ?? 'No description'),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: isOwner
+                        ? PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'rename') {
+                                _showRenameWorkspaceDialog(
+                                  context,
+                                  workspace.id,
+                                  workspace.name,
+                                  workspace.description,
+                                );
+                              } else if (value == 'delete') {
+                                _showDeleteConfirmationDialog(
+                                  context,
+                                  workspace.id,
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Text('Rename'),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ],
+                          )
+                        : const Icon(Icons.chevron_right),
                     onTap: () {
                       context.goNamed(
                         RouteNames.workspaceDetails,
@@ -192,6 +222,94 @@ class _WorkspaceListView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showRenameWorkspaceDialog(
+    BuildContext context,
+    String workspaceId,
+    String currentName,
+    String? currentDescription,
+  ) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: currentName);
+    final descriptionController = TextEditingController(
+      text: currentDescription ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Rename Workspace'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppTextField(
+                  controller: nameController,
+                  hintText: 'Workspace name',
+                  validator: (value) =>
+                      Validators.requiredField(value, fieldName: 'Name'),
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: descriptionController,
+                  hintText: 'Description (optional)',
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            PrimaryButton(
+              text: 'Save',
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  await context.read<WorkspaceListCubit>().renameWorkspace(
+                    workspaceId: workspaceId,
+                    newName: nameController.text,
+                    newDescription: descriptionController.text,
+                  );
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ✅ إضافة Confirmation Dialog للمسح (Hard Delete)
+  void _showDeleteConfirmationDialog(BuildContext context, String workspaceId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Workspace'),
+        content: const Text(
+          'Are you sure you want to delete this workspace? All sections, memory boxes, and notes inside it will be permanently deleted. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<WorkspaceListCubit>().deleteWorkspace(workspaceId);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }
