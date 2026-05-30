@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
-import 'package:memory_chat/core/utils/validators.dart';
+import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_cubit.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_state.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_cubit.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_state.dart';
-import 'package:memory_chat/shared/widgets/app_text_field.dart';
+import 'package:memory_chat/features/memory_boxes/presentation/widgets/memory_box_tile.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_state.dart';
+import 'package:memory_chat/shared/dialogs/create_memory_box_dialog.dart';
+import 'package:memory_chat/shared/widgets/empty_state_card.dart';
 import 'package:memory_chat/shared/widgets/loading_indicator.dart';
-import 'package:memory_chat/shared/widgets/primary_button.dart';
-import 'package:memory_chat/app/router/route_names.dart';
-import 'package:go_router/go_router.dart';
 
 class MemoryBoxListPage extends StatelessWidget {
   final String workspaceId;
@@ -34,8 +36,12 @@ class MemoryBoxListPage extends StatelessWidget {
           create: (_) => sl<MemoryBoxesCubit>()
             ..loadMemoryBoxes(
               workspaceId: workspaceId,
-              sectionId: sectionId, // ممكن يكون null لو في الـ Root
+              sectionId: sectionId,
             ),
+        ),
+        // ✅ الـ SectionsCubit عشان الـ Move يشتغل
+        BlocProvider(
+          create: (_) => sl<SectionsCubit>()..loadSections(workspaceId),
         ),
         BlocProvider(create: (_) => sl<CreateMemoryBoxCubit>()),
       ],
@@ -43,6 +49,7 @@ class MemoryBoxListPage extends StatelessWidget {
         workspaceId: workspaceId,
         sectionId: sectionId,
         sectionTitle: sectionTitle,
+        workspaceName: workspaceName,
       ),
     );
   }
@@ -52,11 +59,13 @@ class _MemoryBoxListView extends StatelessWidget {
   final String workspaceId;
   final String sectionId;
   final String? sectionTitle;
+  final String? workspaceName;
 
   const _MemoryBoxListView({
     required this.workspaceId,
     required this.sectionId,
     this.sectionTitle,
+    this.workspaceName,
   });
 
   @override
@@ -65,19 +74,17 @@ class _MemoryBoxListView extends StatelessWidget {
       listener: (context, state) {
         if (state.status == CreateMemoryBoxStatus.success) {
           context.read<MemoryBoxesCubit>().loadMemoryBoxes(
-            workspaceId: workspaceId,
-            sectionId: sectionId,
-          );
+                workspaceId: workspaceId,
+                sectionId: sectionId,
+              );
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Memory box created successfully')),
+            const SnackBar(content: Text('Memory box created')),
           );
-        }
-
-        if (state.status == CreateMemoryBoxStatus.failure &&
+        } else if (state.status == CreateMemoryBoxStatus.failure &&
             state.errorMessage != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.errorMessage!)),
+          );
         }
       },
       child: Scaffold(
@@ -91,242 +98,88 @@ class _MemoryBoxListView extends StatelessWidget {
           title: Text(sectionTitle ?? 'Memory Boxes'),
           centerTitle: true,
         ),
-        body: BlocBuilder<MemoryBoxesCubit, MemoryBoxesState>(
-          builder: (context, state) {
-            if (state.status == MemoryBoxesStatus.loading) {
-              return const LoadingIndicator();
-            }
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              context.read<MemoryBoxesCubit>().loadMemoryBoxes(
+                    workspaceId: workspaceId,
+                    sectionId: sectionId,
+                  ),
+              context.read<SectionsCubit>().loadSections(workspaceId),
+            ]);
+          },
+          // ✅ BlocBuilder للـ SectionsCubit عشان نضمن إن الـ sections جاهزة
+          child: BlocBuilder<SectionsCubit, SectionsState>(
+            builder: (context, sectionsState) {
+              final sections = sectionsState.sections;
 
-            if (state.status == MemoryBoxesStatus.failure) {
-              return Center(
-                child: Text(state.errorMessage ?? 'Something went wrong'),
-              );
-            }
+              return BlocBuilder<MemoryBoxesCubit, MemoryBoxesState>(
+                builder: (context, memoryState) {
+                  if (memoryState.status == MemoryBoxesStatus.loading &&
+                      memoryState.memoryBoxes.isEmpty) {
+                    return const LoadingIndicator();
+                  }
 
-            if (state.memoryBoxes.isEmpty) {
-              return const Center(child: Text('No memory boxes yet'));
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.memoryBoxes.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final box = state.memoryBoxes[index];
-
-                return Card(
-                  child: ListTile(
-                    title: Text(box.title),
-                    subtitle: Text(box.description ?? 'No description'),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _showEditMemoryBoxDialog(
-                            context,
-                            box.id,
-                            box.title,
-                            box.description,
-                          );
-                        } else if (value == 'delete') {
-                          _showDeleteConfirmationDialog(context, box.id);
-                        }
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  if (memoryState.status == MemoryBoxesStatus.failure &&
+                      memoryState.memoryBoxes.isEmpty) {
+                    return ListView(
+                      children: [
+                        const SizedBox(height: 100),
+                        Center(
+                          child: Text(
+                              memoryState.errorMessage ?? 'Something went wrong'),
+                        ),
                       ],
-                    ),
-                    onTap: () {
-                      context.goNamed(
-                        RouteNames.noteList,
-                        pathParameters: {
-                          'workspaceId': workspaceId,
-                          'sectionId': sectionId,
-                          'memoryBoxId': box.id,
-                        },
-                        extra: {
-                          'memoryBoxTitle': box.title,
-                          'sectionTitle': sectionTitle,
-                        },
+                    );
+                  }
+
+                  if (memoryState.memoryBoxes.isEmpty) {
+                    return ListView(
+                      children: [
+                        const SizedBox(height: 100),
+                        EmptyStateCard(
+                          icon: Icons.inventory_2_outlined,
+                          message: 'No memory boxes in this section',
+                          actionLabel: 'Create your first memory box',
+                          onAction: () => showCreateMemoryBoxDialog(
+                            context,
+                            workspaceId: workspaceId,
+                            sectionId: sectionId,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: memoryState.memoryBoxes.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final box = memoryState.memoryBoxes[index];
+                      return MemoryBoxTile(
+                        box: box,
+                        workspaceId: workspaceId,
+                        sectionId: sectionId,
+                        sectionTitle: sectionTitle,
+                        workspaceName: workspaceName,
+                        availableSections: sections,
                       );
                     },
-                  ),
-                );
-              },
-            );
-          },
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _showCreateMemoryBoxDialog(context),
-          child: const Icon(Icons.add),
-        ),
-      ),
-    );
-  }
-
-  void _showCreateMemoryBoxDialog(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (_) {
-        return BlocProvider.value(
-          value: context.read<CreateMemoryBoxCubit>(),
-          child: AlertDialog(
-            title: const Text('Create Memory Box'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    controller: titleController,
-                    hintText: 'Title',
-                    validator: (value) =>
-                        Validators.requiredField(value, fieldName: 'Title'),
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    controller: descriptionController,
-                    hintText: 'Description (optional)',
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              BlocBuilder<CreateMemoryBoxCubit, CreateMemoryBoxState>(
-                builder: (context, state) {
-                  return SizedBox(
-                    width: 120,
-                    child: PrimaryButton(
-                      text: 'Create',
-                      isLoading: state.status == CreateMemoryBoxStatus.loading,
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
-                          await context
-                              .read<CreateMemoryBoxCubit>()
-                              .createMemoryBox(
-                                workspaceId: workspaceId, // ✅ ضفناها هنا
-                                sectionId: sectionId,
-                                title: titleController.text,
-                                description: descriptionController.text,
-                              );
-
-                          if (context.mounted &&
-                              context
-                                      .read<CreateMemoryBoxCubit>()
-                                      .state
-                                      .status ==
-                                  CreateMemoryBoxStatus.success) {
-                            Navigator.pop(context);
-                          }
-                        }
-                      },
-                    ),
                   );
                 },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showEditMemoryBoxDialog(
-    BuildContext context,
-    String memoryBoxId,
-    String currentTitle,
-    String? currentDescription,
-  ) {
-    final formKey = GlobalKey<FormState>();
-    final titleController = TextEditingController(text: currentTitle);
-    final descriptionController = TextEditingController(
-      text: currentDescription ?? '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text('Edit Memory Box'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppTextField(
-                  controller: titleController,
-                  hintText: 'Title',
-                  validator: (value) =>
-                      Validators.requiredField(value, fieldName: 'Title'),
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: descriptionController,
-                  hintText: 'Description (optional)',
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            PrimaryButton(
-              text: 'Save',
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  await context.read<MemoryBoxesCubit>().updateMemoryBox(
-                    memoryBoxId: memoryBoxId,
-                    title: titleController.text,
-                    description: descriptionController.text,
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // ✅ Confirmation Dialog للـ Hard Delete
-  void _showDeleteConfirmationDialog(BuildContext context, String memoryBoxId) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Memory Box'),
-        content: const Text(
-          'Are you sure you want to delete this memory box? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<MemoryBoxesCubit>().deleteMemoryBox(memoryBoxId);
+              );
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
           ),
-        ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => showCreateMemoryBoxDialog(
+            context,
+            workspaceId: workspaceId,
+            sectionId: sectionId,
+          ),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

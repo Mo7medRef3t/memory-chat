@@ -11,27 +11,23 @@ class NoteModel extends NoteEntity {
     required super.updatedAt,
   });
 
-  factory NoteModel.fromJson(Map<String, dynamic> json) {
-    return NoteModel(
-      id: json['id'] as String,
-      memoryBoxId: json['memory_box_id'] as String,
-      authorId: json['author_id'] as String,
-      title: json['title'] as String,
-      content: json['content'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-    );
-  }
+  factory NoteModel.fromJson(Map<String, dynamic> json) => NoteModel(
+    id: json['id'] as String,
+    memoryBoxId: json['memory_box_id'] as String,
+    authorId: json['author_id'] as String,
+    title: json['title'] as String,
+    content: json['content'] as String,
+    createdAt: DateTime.parse(json['created_at'] as String),
+    updatedAt: DateTime.parse(json['updated_at'] as String),
+  );
 
-  Map<String, dynamic> toInsertJson() {
-    return {
-      'id': id,
-      'memory_box_id': memoryBoxId,
-      'author_id': authorId,
-      'title': title,
-      'content': content,
-      'created_at': createdAt.toUtc().toIso8601String(),
-      'updated_at': updatedAt.toUtc().toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toInsertJson() => {
+    'id': id,
+    'memory_box_id': memoryBoxId,
+    'author_id': authorId,
+    'title': title,
+    'content': content,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+  };
 }

@@ -11,7 +11,6 @@ class NotesRemoteDataSource {
         .from('notes')
         .select()
         .eq('memory_box_id', memoryBoxId)
-        .isFilter('deleted_at', null)
         .order('updated_at', ascending: false);
 
     return (response as List).map((json) => NoteModel.fromJson(json)).toList();
@@ -24,8 +23,7 @@ class NotesRemoteDataSource {
         .eq('id', noteId)
         .maybeSingle();
 
-    if (response == null) return null;
-    return NoteModel.fromJson(response);
+    return response == null ? null : NoteModel.fromJson(response);
   }
 
   Future<void> createNote(NoteModel note) async {
@@ -48,9 +46,6 @@ class NotesRemoteDataSource {
   }
 
   Future<void> deleteNote(String noteId) async {
-    await client
-        .from('notes')
-        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
-        .eq('id', noteId);
+    await client.from('notes').delete().eq('id', noteId);
   }
 }

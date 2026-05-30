@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
 import 'package:memory_chat/app/router/route_names.dart';
+import 'package:memory_chat/features/notes/domain/entities/note_entity.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_state.dart';
+import 'package:memory_chat/features/notes/presentation/widgets/note_tile.dart';
+import 'package:memory_chat/shared/widgets/empty_state_card.dart';
 import 'package:memory_chat/shared/widgets/loading_indicator.dart';
 
 class NoteListPage extends StatelessWidget {
@@ -12,8 +15,7 @@ class NoteListPage extends StatelessWidget {
   final String sectionId;
   final String memoryBoxId;
   final String? memoryBoxTitle;
-  final String? sectionTitle;
-  final bool isRootBox; 
+  final bool isRootBox; // ✅ جديد
 
   const NoteListPage({
     super.key,
@@ -21,8 +23,7 @@ class NoteListPage extends StatelessWidget {
     required this.sectionId,
     required this.memoryBoxId,
     this.memoryBoxTitle,
-    this.sectionTitle,
-    this.isRootBox = false, 
+    this.isRootBox = false, // ✅ Default
   });
 
   @override
@@ -55,45 +56,60 @@ class _NoteListView extends StatelessWidget {
     this.isRootBox = false,
   });
 
+  void _handleBack(BuildContext context) {
+    if (isRootBox) {
+      // ✅ ارجع للـ Workspace Details
+      context.goNamed(
+        RouteNames.workspaceDetails,
+        pathParameters: {'workspaceId': workspaceId},
+      );
+    } else {
+      // ✅ ارجع للـ MemoryBoxList
+      context.goNamed(
+        RouteNames.memoryBoxList,
+        pathParameters: {'workspaceId': workspaceId, 'sectionId': sectionId},
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(memoryBoxTitle ?? 'Notes'),
         centerTitle: true,
-        leading: BackButton(
-          onPressed: () {
-          if (isRootBox) {
-            context.goNamed(
-              RouteNames.workspaceDetails,
-              pathParameters: {'workspaceId': workspaceId},
-            );
-          } else {
-            context.goNamed(
-              RouteNames.memoryBoxList,
-              pathParameters: {
-                'workspaceId': workspaceId,
-                'sectionId': sectionId,
-              },
-            );
-          }
-        },
+        leading: BackButton(onPressed: () => _handleBack(context)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _navigateToEditor(context, noteId: null),
           ),
-        ),
+        ],
+      ),
       body: BlocBuilder<NotesCubit, NotesState>(
         builder: (context, state) {
-          if (state.status == NotesStatus.loading) {
+          if (state.status == NotesStatus.loading && state.notes.isEmpty) {
             return const LoadingIndicator();
           }
 
-          if (state.status == NotesStatus.failure) {
+          if (state.status == NotesStatus.failure && state.notes.isEmpty) {
             return Center(
               child: Text(state.errorMessage ?? 'Something went wrong'),
             );
           }
 
           if (state.notes.isEmpty) {
-            return const Center(child: Text('No notes yet'));
+            return ListView(
+              children: [
+                const SizedBox(height: 100),
+                EmptyStateCard(
+                  icon: Icons.note_alt_outlined,
+                  message: 'No notes yet',
+                  actionLabel: 'Create your first note',
+                  onAction: () => _navigateToEditor(context, noteId: null),
+                ),
+              ],
+            );
           }
 
           return ListView.separated(
@@ -102,77 +118,63 @@ class _NoteListView extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final note = state.notes[index];
-
-              return Card(
-                child: ListTile(
-                  title: Text(note.title),
-                  subtitle: Text(
-                    note.content,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        context.goNamed(
-                          RouteNames.noteEditor,
-                          pathParameters: {
-                            'workspaceId': workspaceId,
-                            'sectionId': sectionId,
-                            'memoryBoxId': memoryBoxId,
-                          },
-                          extra: {
-                            'noteId': note.id,
-                            'title': note.title,
-                            'content': note.content,
-                            'memoryBoxTitle': memoryBoxTitle,
-                          },
-                        );
-                      } else if (value == 'delete') {
-                        context.read<NotesCubit>().deleteNote(note.id);
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
-                  ),
-                  onTap: () {
-                    context.goNamed(
-                      RouteNames.noteEditor,
-                      pathParameters: {
-                        'workspaceId': workspaceId,
-                        'sectionId': sectionId,
-                        'memoryBoxId': memoryBoxId,
-                      },
-                      extra: {
-                        'noteId': note.id,
-                        'title': note.title,
-                        'content': note.content,
-                        'memoryBoxTitle': memoryBoxTitle,
-                      },
-                    );
-                  },
-                ),
+              return NoteTile(
+                note: note,
+                onEdit: () => _navigateToEditor(context, noteId: note.id),
+                onDelete: () => context.read<NotesCubit>().deleteNote(note.id),
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.goNamed(
-            RouteNames.noteEditor,
-            pathParameters: {
-              'workspaceId': workspaceId,
-              'sectionId': sectionId,
-              'memoryBoxId': memoryBoxId,
-            },
-            extra: {'memoryBoxTitle': memoryBoxTitle},
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
     );
+  }
+
+  void _navigateToEditor(BuildContext context, {String? noteId}) {
+    NoteEntity? existingNote;
+    if (noteId != null) {
+      try {
+        existingNote = context.read<NotesCubit>().state.notes.firstWhere(
+          (n) => n.id == noteId,
+        );
+      } catch (_) {
+        existingNote = null;
+      }
+    }
+
+    if (isRootBox) {
+      // ✅ استخدم rootNoteEditor للـ Root
+      context.goNamed(
+        RouteNames.rootNoteEditor,
+        pathParameters: {
+          'workspaceId': workspaceId,
+          'memoryBoxId': memoryBoxId,
+        },
+        extra: {
+          'noteId': noteId,
+          'title': existingNote?.title,
+          'content': existingNote?.content,
+          'memoryBoxTitle': memoryBoxTitle,
+          'isRootBox': true,
+        },
+      );
+    } else {
+      // ✅ استخدم noteEditor للـ Section
+      context.goNamed(
+        RouteNames.noteEditor,
+        pathParameters: {
+          'workspaceId': workspaceId,
+          'sectionId': sectionId,
+          'memoryBoxId': memoryBoxId,
+        },
+        extra: {
+          'noteId': noteId,
+          'title': existingNote?.title,
+          'content': existingNote?.content,
+          'memoryBoxTitle': memoryBoxTitle,
+          'isRootBox': false,
+        },
+      );
+    }
   }
 }

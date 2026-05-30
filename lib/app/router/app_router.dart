@@ -30,9 +30,7 @@ class AppRouter {
       }
 
       if (!isLoggedIn) {
-        if (isGoingToLogin || isGoingToSignup) {
-          return null;
-        }
+        if (isGoingToLogin || isGoingToSignup) return null;
         return '/login';
       }
 
@@ -69,7 +67,6 @@ class AppRouter {
         builder: (context, state) {
           final workspaceId = state.pathParameters['workspaceId']!;
           final workspaceName = state.extra as String?;
-
           return WorkspaceDetailsPage(
             workspaceId: workspaceId,
             workspaceName: workspaceName,
@@ -83,7 +80,6 @@ class AppRouter {
           final workspaceId = state.pathParameters['workspaceId']!;
           final sectionId = state.pathParameters['sectionId']!;
           final extra = state.extra as Map<String, dynamic>?;
-
           return MemoryBoxListPage(
             workspaceId: workspaceId,
             sectionId: sectionId,
@@ -92,6 +88,8 @@ class AppRouter {
           );
         },
       ),
+
+      // ✅ Notes داخل Section
       GoRoute(
         path:
             '/workspaces/:workspaceId/sections/:sectionId/memory-boxes/:memoryBoxId/notes',
@@ -101,35 +99,35 @@ class AppRouter {
           final sectionId = state.pathParameters['sectionId']!;
           final memoryBoxId = state.pathParameters['memoryBoxId']!;
           final extra = state.extra as Map<String, dynamic>?;
-
           return NoteListPage(
             workspaceId: workspaceId,
             sectionId: sectionId,
             memoryBoxId: memoryBoxId,
             memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
-            sectionTitle: extra?['sectionTitle'] as String?,
+            isRootBox: false,
           );
         },
       ),
 
+      // ✅ Notes داخل Root Memory Box (بدون Section)
       GoRoute(
-  path: '/workspaces/:workspaceId/memory-boxes/:memoryBoxId/notes',
-  name: RouteNames.rootMemoryBoxNotes,
-  builder: (context, state) {
-    final workspaceId = state.pathParameters['workspaceId']!;
-    final memoryBoxId = state.pathParameters['memoryBoxId']!;
-    final extra = state.extra as Map<String, dynamic>?;
+        path: '/workspaces/:workspaceId/memory-boxes/:memoryBoxId/notes',
+        name: RouteNames.rootNoteList,
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final memoryBoxId = state.pathParameters['memoryBoxId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          return NoteListPage(
+            workspaceId: workspaceId,
+            sectionId: '',
+            memoryBoxId: memoryBoxId,
+            memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
+            isRootBox: true,
+          );
+        },
+      ),
 
-    return NoteListPage(
-      workspaceId: workspaceId,
-      sectionId: '', // مش هنستخدمه
-      memoryBoxId: memoryBoxId,
-      memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
-      sectionTitle: null,
-    );
-  },
-),
-      
+      // ✅ Note Editor للـ Section Memory Box
       GoRoute(
         path:
             '/workspaces/:workspaceId/sections/:sectionId/memory-boxes/:memoryBoxId/notes/editor',
@@ -139,7 +137,6 @@ class AppRouter {
           final sectionId = state.pathParameters['sectionId']!;
           final memoryBoxId = state.pathParameters['memoryBoxId']!;
           final extra = state.extra as Map<String, dynamic>?;
-
           return NoteEditorPage(
             workspaceId: workspaceId,
             sectionId: sectionId,
@@ -148,6 +145,28 @@ class AppRouter {
             initialTitle: extra?['title'] as String?,
             initialContent: extra?['content'] as String?,
             memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
+            isRootBox: false,
+          );
+        },
+      ),
+
+      // ✅ Note Editor للـ Root Memory Box (بدون Section)
+      GoRoute(
+        path: '/workspaces/:workspaceId/memory-boxes/:memoryBoxId/notes/editor',
+        name: RouteNames.rootNoteEditor,
+        builder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final memoryBoxId = state.pathParameters['memoryBoxId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          return NoteEditorPage(
+            workspaceId: workspaceId,
+            sectionId: '',
+            memoryBoxId: memoryBoxId,
+            noteId: extra?['noteId'] as String?,
+            initialTitle: extra?['title'] as String?,
+            initialContent: extra?['content'] as String?,
+            memoryBoxTitle: extra?['memoryBoxTitle'] as String?,
+            isRootBox: true,
           );
         },
       ),
