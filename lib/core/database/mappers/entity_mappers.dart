@@ -82,8 +82,8 @@ extension NoteRowMapper on NoteRow {
     authorId: authorId,
     title: title,
     content: content,
-    createdAt: createdAt,
-    updatedAt: updatedAt,
+    createdAt: DateTime.parse(createdAt),
+    updatedAt: DateTime.parse(updatedAt),
   );
 }
 
@@ -94,7 +94,7 @@ extension NoteEntityMapper on NoteEntity {
     authorId: Value(authorId),
     title: Value(title),
     content: Value(content),
-    createdAt: Value(createdAt),
-    updatedAt: Value(updatedAt),
+    createdAt: Value(createdAt.toUtc().toIso8601String()),
+    updatedAt: Value(updatedAt.toUtc().toIso8601String()),
   );
 }

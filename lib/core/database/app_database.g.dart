@@ -1316,22 +1316,22 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
     'createdAt',
   );
   @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
     'created_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
   @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
     'updated_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   @override
@@ -1442,11 +1442,11 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
         data['${effectivePrefix}content'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
+        DriftSqlType.string,
         data['${effectivePrefix}created_at'],
       )!,
       updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
+        DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
       )!,
     );
@@ -1464,8 +1464,8 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   final String authorId;
   final String title;
   final String content;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String createdAt;
+  final String updatedAt;
   const NoteRow({
     required this.id,
     required this.memoryBoxId,
@@ -1483,8 +1483,8 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     map['author_id'] = Variable<String>(authorId);
     map['title'] = Variable<String>(title);
     map['content'] = Variable<String>(content);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -1511,8 +1511,8 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       authorId: serializer.fromJson<String>(json['authorId']),
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String>(json['content']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
@@ -1524,8 +1524,8 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       'authorId': serializer.toJson<String>(authorId),
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String>(content),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
@@ -1535,8 +1535,8 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     String? authorId,
     String? title,
     String? content,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? createdAt,
+    String? updatedAt,
   }) => NoteRow(
     id: id ?? this.id,
     memoryBoxId: memoryBoxId ?? this.memoryBoxId,
@@ -1603,8 +1603,8 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   final Value<String> authorId;
   final Value<String> title;
   final Value<String> content;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
   final Value<int> rowid;
   const NotesCompanion({
     this.id = const Value.absent(),
@@ -1622,8 +1622,8 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     required String authorId,
     required String title,
     required String content,
-    required DateTime createdAt,
-    required DateTime updatedAt,
+    required String createdAt,
+    required String updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        memoryBoxId = Value(memoryBoxId),
@@ -1638,8 +1638,8 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     Expression<String>? authorId,
     Expression<String>? title,
     Expression<String>? content,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1660,8 +1660,8 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     Value<String>? authorId,
     Value<String>? title,
     Value<String>? content,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
+    Value<String>? createdAt,
+    Value<String>? updatedAt,
     Value<int>? rowid,
   }) {
     return NotesCompanion(
@@ -1695,10 +1695,10 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       map['content'] = Variable<String>(content.value);
     }
     if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
+      map['created_at'] = Variable<String>(createdAt.value);
     }
     if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+      map['updated_at'] = Variable<String>(updatedAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2410,8 +2410,8 @@ typedef $$NotesTableCreateCompanionBuilder =
       required String authorId,
       required String title,
       required String content,
-      required DateTime createdAt,
-      required DateTime updatedAt,
+      required String createdAt,
+      required String updatedAt,
       Value<int> rowid,
     });
 typedef $$NotesTableUpdateCompanionBuilder =
@@ -2421,8 +2421,8 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String> authorId,
       Value<String> title,
       Value<String> content,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
+      Value<String> createdAt,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 
@@ -2459,12 +2459,12 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+  ColumnFilters<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+  ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
@@ -2504,12 +2504,12 @@ class $$NotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+  ColumnOrderings<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
@@ -2541,10 +2541,10 @@ class $$NotesTableAnnotationComposer
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get createdAt =>
+  GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get updatedAt =>
+  GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
@@ -2581,8 +2581,8 @@ class $$NotesTableTableManager
                 Value<String> authorId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String> content = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> createdAt = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NotesCompanion(
                 id: id,
@@ -2601,8 +2601,8 @@ class $$NotesTableTableManager
                 required String authorId,
                 required String title,
                 required String content,
-                required DateTime createdAt,
-                required DateTime updatedAt,
+                required String createdAt,
+                required String updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => NotesCompanion.insert(
                 id: id,

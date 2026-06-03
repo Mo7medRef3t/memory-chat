@@ -7,8 +7,8 @@ class Notes extends Table {
   TextColumn get authorId => text()();
   TextColumn get title => text()();
   TextColumn get content => text()();
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get createdAt => text()();
+  TextColumn get updatedAt => text()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+import '../constants/db_constants.dart';
 
 import 'tables/workspaces_table.dart';
 import 'tables/sections_table.dart';
@@ -15,7 +14,6 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  // For testing only
   AppDatabase.forTesting(super.e);
 
   @override
@@ -36,8 +34,9 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'memory_chat.sqlite'));
+    final path = await DbConstants.dbPath;
+    final file = File(path);
+
     return NativeDatabase.createInBackground(file);
   });
 }

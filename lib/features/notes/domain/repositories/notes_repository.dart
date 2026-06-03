@@ -1,7 +1,7 @@
 import 'package:memory_chat/features/notes/domain/entities/note_entity.dart';
 
 abstract class NotesRepository {
-  Future<List<NoteEntity>> getNotes(String memoryBoxId);
+  Stream<List<NoteEntity>> getNotes(String memoryBoxId);
 
   Future<NoteEntity?> getNoteById(String noteId);
 

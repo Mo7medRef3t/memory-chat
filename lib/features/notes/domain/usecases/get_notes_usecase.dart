@@ -6,7 +6,7 @@ class GetNotesUseCase {
 
   GetNotesUseCase(this.repository);
 
-  Future<List<NoteEntity>> call(String memoryBoxId) {
+  Stream<List<NoteEntity>> call(String memoryBoxId) {
     return repository.getNotes(memoryBoxId);
   }
 }

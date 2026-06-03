@@ -5,6 +5,7 @@ import 'package:memory_chat/core/database/daos/notes_dao.dart';
 import 'package:memory_chat/core/database/daos/sections_dao.dart';
 import 'package:memory_chat/core/database/daos/workspaces_dao.dart';
 import 'package:memory_chat/core/services/supabase_service.dart';
+import 'package:memory_chat/core/sync/powersync_service.dart';
 import 'package:memory_chat/core/utils/id_generator.dart';
 import 'package:memory_chat/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:memory_chat/features/auth/data/repositories/auth_repository_impl.dart';
@@ -27,7 +28,6 @@ import 'package:memory_chat/features/memory_boxes/domain/usecases/move_memory_bo
 import 'package:memory_chat/features/memory_boxes/domain/usecases/update_memory_box_usecase.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_cubit.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_cubit.dart';
-import 'package:memory_chat/features/notes/data/datasources/notes_remote_data_source.dart';
 import 'package:memory_chat/features/notes/data/repositories/notes_repository_impl.dart';
 import 'package:memory_chat/features/notes/domain/repositories/notes_repository.dart';
 import 'package:memory_chat/features/notes/domain/usecases/create_note_usecase.dart';
@@ -194,18 +194,15 @@ Future<void> configureDependencies() async {
   );
 
   // ============ Notes Feature ============
-  // ✅ تم حذف التكرار! تسجيل واحد فقط
-  sl.registerLazySingleton<NotesRemoteDataSource>(
-    () => NotesRemoteDataSource(sl<SupabaseClient>()),
-  );
-  sl.registerLazySingleton<NotesRepository>(
-    () => NotesRepositoryImpl(sl<NotesRemoteDataSource>()),
-  );
+
+  sl.registerLazySingleton<NotesRepository>(() => NotesRepositoryImpl());
+
   sl.registerLazySingleton(() => GetNotesUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => GetNoteByIdUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => CreateNoteUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => UpdateNoteUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => DeleteNoteUseCase(sl<NotesRepository>()));
+
   sl.registerFactory(
     () => NotesCubit(
       getNotesUseCase: sl<GetNotesUseCase>(),
@@ -226,4 +223,7 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<SectionsDao>(() => SectionsDao(sl()));
   sl.registerLazySingleton<MemoryBoxesDao>(() => MemoryBoxesDao(sl()));
   sl.registerLazySingleton<NotesDao>(() => NotesDao(sl()));
+
+  // ============ PowerSync ============
+  sl.registerLazySingleton<PowerSyncService>(() => PowerSyncService());
 }

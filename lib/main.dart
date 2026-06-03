@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:memory_chat/app/app.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
 import 'package:memory_chat/core/constants/env_keys.dart';
+import 'package:memory_chat/core/sync/powersync_service.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,7 +19,7 @@ Future<void> main() async {
 
   await configureDependencies();
 
-
+  await sl<PowerSyncService>().initialize();
   await sl<AuthCubit>().initialize();
 
   runApp(const MemoryChatApp());
