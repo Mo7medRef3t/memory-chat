@@ -62,13 +62,12 @@ class _WorkspaceDetailsView extends StatelessWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await Future.wait([
-            context.read<SectionsCubit>().loadSections(workspaceId),
-            context.read<MemoryBoxesCubit>().loadMemoryBoxes(
-              workspaceId: workspaceId,
-              sectionId: null,
-            ),
-          ]);
+          context.read<SectionsCubit>().loadSections(workspaceId);
+          context.read<MemoryBoxesCubit>().loadMemoryBoxes(
+            workspaceId: workspaceId,
+            sectionId: null,
+          );
+          return Future.delayed(const Duration(milliseconds: 500));
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

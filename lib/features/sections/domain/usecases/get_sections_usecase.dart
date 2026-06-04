@@ -6,7 +6,7 @@ class GetSectionsUseCase {
 
   GetSectionsUseCase(this.repository);
 
-  Future<List<SectionEntity>> call(String workspaceId) {
+  Stream<List<SectionEntity>> call(String workspaceId) {
     return repository.getSections(workspaceId);
   }
 }

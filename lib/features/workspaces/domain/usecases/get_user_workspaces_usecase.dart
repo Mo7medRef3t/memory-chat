@@ -6,7 +6,7 @@ class GetUserWorkspacesUseCase {
 
   GetUserWorkspacesUseCase(this.repository);
 
-  Future<List<WorkspaceEntity>> call(String userId) {
+  Stream<List<WorkspaceEntity>> call(String userId) {
     return repository.getUserWorkspaces(userId);
   }
 }

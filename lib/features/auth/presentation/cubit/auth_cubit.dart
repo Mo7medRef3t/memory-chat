@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
 import 'package:memory_chat/core/sync/powersync_service.dart';
@@ -26,7 +25,6 @@ class AuthCubit extends Cubit<AuthState> {
 
     if (user != null) {
       emit(AuthState(status: AuthStatus.authenticated, user: user));
-
       await Future.delayed(const Duration(milliseconds: 500));
       await _connectPowerSync();
     } else {
@@ -50,9 +48,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       await sl<PowerSyncService>().clearDatabase();
-    } catch (e) {
-      log('⚠️ [AuthCubit] Failed to clear database: $e');
-    }
+    } catch (_) {}
 
     await signOutUseCase();
     emit(const AuthState(status: AuthStatus.unauthenticated));
@@ -62,18 +58,12 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final ps = sl<PowerSyncService>();
 
-      if (!ps.isInitialized) {
-        return;
-      }
+      if (!ps.isInitialized) return;
+      if (ps.isConnected) return;
 
-      if (ps.isConnected) {
-        return;
-      }
-
+      await ps.clearUploadQueue();
       await ps.connect();
-    } catch (e) {
-      log('⚠️ [AuthCubit] Failed to connect PowerSync: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _disconnectPowerSync() async {
@@ -82,9 +72,7 @@ class AuthCubit extends Cubit<AuthState> {
       if (ps.isConnected) {
         await ps.disconnect();
       }
-    } catch (e) {
-      log('⚠️ [AuthCubit] Failed to disconnect PowerSync: $e');
-    }
+    } catch (_) {}
   }
 
   @override

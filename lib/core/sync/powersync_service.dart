@@ -1,10 +1,9 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'supabase_connector.dart';
 import 'package:path/path.dart' as p;
+import 'supabase_connector.dart';
 
 class PowerSyncService {
   PowerSyncDatabase? _db;
@@ -31,6 +30,50 @@ class PowerSyncService {
 
     await _db!.initialize();
     _initialized = true;
+  }
+
+  Future<void> clearUploadQueue() async {
+    if (_db == null) return;
+
+    try {
+      await _db!.writeTransaction((tx) async {
+        await tx.execute('DELETE FROM ps_crud');
+      });
+
+      var batch = await _db!.getCrudBatch();
+      while (batch != null) {
+        await batch.complete();
+        batch = await _db!.getCrudBatch();
+        if (batch == null) break;
+      }
+    } catch (_) {
+      await _forceDeleteDatabase();
+    }
+  }
+
+  Future<void> _forceDeleteDatabase() async {
+    try {
+      if (_db != null) {
+        await _db!.close();
+        _db = null;
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final dbPath = p.join(dir.path, 'memory_chat_unified.db');
+
+      final files = [dbPath, '$dbPath-wal', '$dbPath-shm', '$dbPath-journal'];
+
+      for (final filePath in files) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+
+      _initialized = false;
+      _connected = false;
+      await initialize();
+    } catch (_) {}
   }
 
   Future<void> connect() async {

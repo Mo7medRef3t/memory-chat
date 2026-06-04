@@ -10,53 +10,60 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   @override
   Future<PowerSyncCredentials?> fetchCredentials() async {
-    final session = _supabase.auth.currentSession;
+    try {
+      final session = _supabase.auth.currentSession;
+      if (session == null) return null;
 
-    if (session == null) {
+      final endpoint = dotenv.env[EnvKeys.powerSyncUrl] ?? '';
+      if (endpoint.isEmpty) return null;
+
+      return PowerSyncCredentials(
+        endpoint: endpoint,
+        token: session.accessToken,
+      );
+    } catch (_) {
       return null;
     }
-
-    final endpoint = dotenv.env[EnvKeys.powerSyncUrl] ?? '';
-
-    return PowerSyncCredentials(endpoint: endpoint, token: session.accessToken);
   }
 
   @override
   Future<void> uploadData(PowerSyncDatabase database) async {
     final transaction = await database.getNextCrudTransaction();
-
-    if (transaction == null) {
-      return;
-    }
-
+    if (transaction == null) return;
 
     try {
       for (final op in transaction.crud) {
-
         await _uploadOperation(op);
       }
-
       await transaction.complete();
-    // ignore: empty_catches
-    } catch (e) {    }
+    } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('permission denied') ||
+          errorStr.contains('violates') ||
+          errorStr.contains('foreign key') ||
+          errorStr.contains('duplicate key') ||
+          errorStr.contains('not-null') ||
+          errorStr.contains('invalid input')) {
+        await transaction.complete();
+      }
+    }
   }
 
   Future<void> _uploadOperation(CrudEntry op) async {
     final table = op.table;
     final id = op.id;
 
-
     switch (op.op) {
       case UpdateType.put:
         final data = {...?op.opData, 'id': id};
-        // <-- هذا هو الكشف
-
         await _supabase.from(table).upsert(data, onConflict: 'id');
         break;
+
       case UpdateType.patch:
-        final data = {...?op.opData, 'id': id};
+        final data = {...?op.opData};
         await _supabase.from(table).update(data).eq('id', id);
         break;
+
       case UpdateType.delete:
         await _supabase.from(table).delete().eq('id', id);
         break;

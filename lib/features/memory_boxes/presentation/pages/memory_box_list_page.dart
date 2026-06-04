@@ -34,12 +34,8 @@ class MemoryBoxListPage extends StatelessWidget {
       providers: [
         BlocProvider(
           create: (_) => sl<MemoryBoxesCubit>()
-            ..loadMemoryBoxes(
-              workspaceId: workspaceId,
-              sectionId: sectionId,
-            ),
+            ..loadMemoryBoxes(workspaceId: workspaceId, sectionId: sectionId),
         ),
-        // ✅ الـ SectionsCubit عشان الـ Move يشتغل
         BlocProvider(
           create: (_) => sl<SectionsCubit>()..loadSections(workspaceId),
         ),
@@ -74,17 +70,17 @@ class _MemoryBoxListView extends StatelessWidget {
       listener: (context, state) {
         if (state.status == CreateMemoryBoxStatus.success) {
           context.read<MemoryBoxesCubit>().loadMemoryBoxes(
-                workspaceId: workspaceId,
-                sectionId: sectionId,
-              );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Memory box created')),
+            workspaceId: workspaceId,
+            sectionId: sectionId,
           );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Memory box created')));
         } else if (state.status == CreateMemoryBoxStatus.failure &&
             state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage!)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
         }
       },
       child: Scaffold(
@@ -100,15 +96,13 @@ class _MemoryBoxListView extends StatelessWidget {
         ),
         body: RefreshIndicator(
           onRefresh: () async {
-            await Future.wait([
-              context.read<MemoryBoxesCubit>().loadMemoryBoxes(
-                    workspaceId: workspaceId,
-                    sectionId: sectionId,
-                  ),
-              context.read<SectionsCubit>().loadSections(workspaceId),
-            ]);
+            context.read<MemoryBoxesCubit>().loadMemoryBoxes(
+              workspaceId: workspaceId,
+              sectionId: sectionId,
+            );
+            context.read<SectionsCubit>().loadSections(workspaceId);
+            return Future.delayed(const Duration(milliseconds: 500));
           },
-          // ✅ BlocBuilder للـ SectionsCubit عشان نضمن إن الـ sections جاهزة
           child: BlocBuilder<SectionsCubit, SectionsState>(
             builder: (context, sectionsState) {
               final sections = sectionsState.sections;
@@ -127,7 +121,8 @@ class _MemoryBoxListView extends StatelessWidget {
                         const SizedBox(height: 100),
                         Center(
                           child: Text(
-                              memoryState.errorMessage ?? 'Something went wrong'),
+                            memoryState.errorMessage ?? 'Something went wrong',
+                          ),
                         ),
                       ],
                     );

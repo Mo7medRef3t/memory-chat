@@ -1,7 +1,7 @@
 import 'package:memory_chat/features/memory_boxes/domain/entities/memory_box_entity.dart';
 
 abstract class MemoryBoxesRepository {
-  Future<List<MemoryBoxEntity>> getMemoryBoxes({
+  Stream<List<MemoryBoxEntity>> getMemoryBoxes({
     required String workspaceId,
     String? sectionId,
   });

@@ -6,9 +6,9 @@ class GetMemoryBoxesUseCase {
 
   GetMemoryBoxesUseCase(this.repository);
 
-  Future<List<MemoryBoxEntity>> call({
+  Stream<List<MemoryBoxEntity>> call({
     required String workspaceId,
-    String? sectionId, 
+    String? sectionId,
   }) {
     return repository.getMemoryBoxes(
       workspaceId: workspaceId,

@@ -18,7 +18,6 @@ import 'package:memory_chat/features/auth/domain/usecases/watch_auth_state_useca
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/login_cubit.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/signup_cubit.dart';
-import 'package:memory_chat/features/memory_boxes/data/datasources/memory_boxes_remote_data_source.dart';
 import 'package:memory_chat/features/memory_boxes/data/repositories/memory_boxes_repository_impl.dart';
 import 'package:memory_chat/features/memory_boxes/domain/repositories/memory_boxes_repository.dart';
 import 'package:memory_chat/features/memory_boxes/domain/usecases/create_memory_box_usecase.dart';
@@ -37,7 +36,6 @@ import 'package:memory_chat/features/notes/domain/usecases/get_notes_usecase.dar
 import 'package:memory_chat/features/notes/domain/usecases/update_note_usecase.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
-import 'package:memory_chat/features/sections/data/datasources/sections_remote_data_source.dart';
 import 'package:memory_chat/features/sections/data/repositories/sections_repository_impl.dart';
 import 'package:memory_chat/features/sections/domain/repositories/sections_repository.dart';
 import 'package:memory_chat/features/sections/domain/usecases/create_section_usecase.dart';
@@ -46,7 +44,6 @@ import 'package:memory_chat/features/sections/domain/usecases/get_sections_useca
 import 'package:memory_chat/features/sections/domain/usecases/rename_section_usecase.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/create_section_cubit.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
-import 'package:memory_chat/features/workspaces/data/datasources/workspaces_remote_data_source.dart';
 import 'package:memory_chat/features/workspaces/data/repositories/workspaces_repository_impl.dart';
 import 'package:memory_chat/features/workspaces/domain/repositories/workspaces_repository.dart';
 import 'package:memory_chat/features/workspaces/domain/usecases/create_workspace_usecase.dart';
@@ -66,6 +63,9 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<IdGenerator>(() => IdGenerator(sl<Uuid>()));
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
   sl.registerLazySingleton<SupabaseService>(() => SupabaseService());
+
+  // ============ PowerSync ============
+  sl.registerLazySingleton<PowerSyncService>(() => PowerSyncService());
 
   // ============ Auth Feature ============
   sl.registerLazySingleton<AuthRemoteDataSource>(
@@ -90,14 +90,8 @@ Future<void> configureDependencies() async {
   sl.registerFactory(() => SignupCubit(sl<SignUpUseCase>()));
 
   // ============ Workspaces Feature ============
-  sl.registerLazySingleton<WorkspacesRemoteDataSource>(
-    () => WorkspacesRemoteDataSource(sl<SupabaseClient>()),
-  );
   sl.registerLazySingleton<WorkspacesRepository>(
-    () => WorkspacesRepositoryImpl(
-      remoteDataSource: sl<WorkspacesRemoteDataSource>(),
-      idGenerator: sl<IdGenerator>(),
-    ),
+    () => WorkspacesRepositoryImpl(),
   );
   sl.registerLazySingleton(
     () => GetUserWorkspacesUseCase(sl<WorkspacesRepository>()),
@@ -126,12 +120,7 @@ Future<void> configureDependencies() async {
   );
 
   // ============ Sections Feature ============
-  sl.registerLazySingleton<SectionsRemoteDataSource>(
-    () => SectionsRemoteDataSource(sl<SupabaseClient>()),
-  );
-  sl.registerLazySingleton<SectionsRepository>(
-    () => SectionsRepositoryImpl(sl<SectionsRemoteDataSource>()),
-  );
+  sl.registerLazySingleton<SectionsRepository>(() => SectionsRepositoryImpl());
   sl.registerLazySingleton(() => GetSectionsUseCase(sl<SectionsRepository>()));
   sl.registerLazySingleton(
     () => CreateSectionUseCase(sl<SectionsRepository>()),
@@ -157,11 +146,8 @@ Future<void> configureDependencies() async {
   );
 
   // ============ Memory Boxes Feature ============
-  sl.registerLazySingleton<MemoryBoxesRemoteDataSource>(
-    () => MemoryBoxesRemoteDataSource(sl<SupabaseClient>()),
-  );
   sl.registerLazySingleton<MemoryBoxesRepository>(
-    () => MemoryBoxesRepositoryImpl(sl<MemoryBoxesRemoteDataSource>()),
+    () => MemoryBoxesRepositoryImpl(),
   );
   sl.registerLazySingleton(
     () => GetMemoryBoxesUseCase(sl<MemoryBoxesRepository>()),
@@ -194,15 +180,12 @@ Future<void> configureDependencies() async {
   );
 
   // ============ Notes Feature ============
-
   sl.registerLazySingleton<NotesRepository>(() => NotesRepositoryImpl());
-
   sl.registerLazySingleton(() => GetNotesUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => GetNoteByIdUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => CreateNoteUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => UpdateNoteUseCase(sl<NotesRepository>()));
   sl.registerLazySingleton(() => DeleteNoteUseCase(sl<NotesRepository>()));
-
   sl.registerFactory(
     () => NotesCubit(
       getNotesUseCase: sl<GetNotesUseCase>(),
@@ -223,7 +206,4 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<SectionsDao>(() => SectionsDao(sl()));
   sl.registerLazySingleton<MemoryBoxesDao>(() => MemoryBoxesDao(sl()));
   sl.registerLazySingleton<NotesDao>(() => NotesDao(sl()));
-
-  // ============ PowerSync ============
-  sl.registerLazySingleton<PowerSyncService>(() => PowerSyncService());
 }
