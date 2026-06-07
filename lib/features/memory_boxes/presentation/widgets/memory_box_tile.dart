@@ -77,12 +77,11 @@ class MemoryBoxTile extends StatelessWidget {
   }
 
   Future<void> _handleMove(BuildContext context) async {
-    // ✅ استخدم الـ parameter بدل ما تقرأ من context
     await showMoveMemoryBoxDialog(
       context: context,
       memoryBoxId: box.id,
       workspaceId: workspaceId,
-      availableSections: availableSections, // ✅ من الـ parent
+      availableSections: availableSections,
       currentSectionId: sectionId,
     );
   }

@@ -11,6 +11,7 @@ class AppLayout extends StatelessWidget {
   final Widget child;
   final VoidCallback? onCreateWorkspace;
   final VoidCallback? onCreateSection;
+  final PreferredSizeWidget? appBar;
 
   const AppLayout({
     super.key,
@@ -19,10 +20,14 @@ class AppLayout extends StatelessWidget {
     required this.child,
     this.onCreateWorkspace,
     this.onCreateSection,
+    this.appBar,
   });
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     final authState = context.read<AuthCubit>().state;
     final currentUserId = authState.user?.id ?? '';
 
@@ -33,18 +38,41 @@ class AppLayout extends StatelessWidget {
               sl<WorkspaceListCubit>()..loadWorkspaces(currentUserId),
         ),
       ],
-      child: Scaffold(
-        body: Row(
-          children: [
-            AppSidebar(
-              selectedWorkspaceId: selectedWorkspaceId,
-              selectedSectionId: selectedSectionId,
-              onCreateWorkspace: onCreateWorkspace,
-              onCreateSection: onCreateSection,
-            ),
-            Expanded(child: child),
-          ],
+      child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      appBar: appBar,
+      drawer: Drawer(
+        width: 280,
+        child: SafeArea(
+          child: AppSidebar(
+            selectedWorkspaceId: selectedWorkspaceId,
+            selectedSectionId: selectedSectionId,
+            onCreateWorkspace: onCreateWorkspace,
+            onCreateSection: onCreateSection,
+          ),
         ),
+      ),
+      body: child,
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      appBar: appBar,
+      body: Row(
+        children: [
+          AppSidebar(
+            selectedWorkspaceId: selectedWorkspaceId,
+            selectedSectionId: selectedSectionId,
+            onCreateWorkspace: onCreateWorkspace,
+            onCreateSection: onCreateSection,
+          ),
+          Expanded(child: child),
+        ],
       ),
     );
   }
