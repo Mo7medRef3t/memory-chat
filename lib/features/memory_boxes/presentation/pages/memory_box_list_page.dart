@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
-import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_cubit.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/create_memory_box_state.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_cubit.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/cubit/memory_boxes_state.dart';
 import 'package:memory_chat/features/memory_boxes/presentation/widgets/memory_box_tile.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/create_section_cubit.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/sections_state.dart';
+import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
 import 'package:memory_chat/shared/dialogs/create_memory_box_dialog.dart';
+import 'package:memory_chat/shared/widgets/app_layout.dart';
 import 'package:memory_chat/shared/widgets/empty_state_card.dart';
 import 'package:memory_chat/shared/widgets/loading_indicator.dart';
 
@@ -40,6 +41,8 @@ class MemoryBoxListPage extends StatelessWidget {
           create: (_) => sl<SectionsCubit>()..loadSections(workspaceId),
         ),
         BlocProvider(create: (_) => sl<CreateMemoryBoxCubit>()),
+        BlocProvider(create: (_) => sl<CreateSectionCubit>()),
+        BlocProvider(create: (_) => sl<CreateWorkspaceCubit>()),
       ],
       child: _MemoryBoxListView(
         workspaceId: workspaceId,
@@ -66,66 +69,43 @@ class _MemoryBoxListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CreateMemoryBoxCubit, CreateMemoryBoxState>(
-      listener: (context, state) {
-        if (state.status == CreateMemoryBoxStatus.success) {
-          context.read<MemoryBoxesCubit>().loadMemoryBoxes(
-            workspaceId: workspaceId,
-            sectionId: sectionId,
-          );
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Memory box created')));
-        } else if (state.status == CreateMemoryBoxStatus.failure &&
-            state.errorMessage != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: BackButton(
-            onPressed: () => context.goNamed(
-              RouteNames.workspaceDetails,
-              pathParameters: {'workspaceId': workspaceId},
-            ),
-          ),
-          title: Text(sectionTitle ?? 'Memory Boxes'),
-          centerTitle: true,
-        ),
-        body: RefreshIndicator(
-          onRefresh: () async {
+    
+    return AppLayout(
+      selectedWorkspaceId: workspaceId,
+      selectedSectionId: sectionId,
+      child: BlocListener<CreateMemoryBoxCubit, CreateMemoryBoxState>(
+        listener: (context, state) {
+          if (state.status == CreateMemoryBoxStatus.success) {
             context.read<MemoryBoxesCubit>().loadMemoryBoxes(
               workspaceId: workspaceId,
               sectionId: sectionId,
             );
-            context.read<SectionsCubit>().loadSections(workspaceId);
-            return Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: BlocBuilder<SectionsCubit, SectionsState>(
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Memory box created')));
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(sectionTitle ?? 'Memory Boxes'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add_box_outlined),
+                onPressed: () => showCreateMemoryBoxDialog(
+                  context,
+                  workspaceId: workspaceId,
+                  sectionId: sectionId,
+                ),
+              ),
+            ],
+          ),
+          body: BlocBuilder<SectionsCubit, SectionsState>(
             builder: (context, sectionsState) {
-              final sections = sectionsState.sections;
-
               return BlocBuilder<MemoryBoxesCubit, MemoryBoxesState>(
                 builder: (context, memoryState) {
                   if (memoryState.status == MemoryBoxesStatus.loading &&
                       memoryState.memoryBoxes.isEmpty) {
                     return const LoadingIndicator();
-                  }
-
-                  if (memoryState.status == MemoryBoxesStatus.failure &&
-                      memoryState.memoryBoxes.isEmpty) {
-                    return ListView(
-                      children: [
-                        const SizedBox(height: 100),
-                        Center(
-                          child: Text(
-                            memoryState.errorMessage ?? 'Something went wrong',
-                          ),
-                        ),
-                      ],
-                    );
                   }
 
                   if (memoryState.memoryBoxes.isEmpty) {
@@ -146,34 +126,35 @@ class _MemoryBoxListView extends StatelessWidget {
                     );
                   }
 
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: memoryState.memoryBoxes.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final box = memoryState.memoryBoxes[index];
-                      return MemoryBoxTile(
-                        box: box,
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<MemoryBoxesCubit>().loadMemoryBoxes(
                         workspaceId: workspaceId,
                         sectionId: sectionId,
-                        sectionTitle: sectionTitle,
-                        workspaceName: workspaceName,
-                        availableSections: sections,
                       );
+                      return Future.delayed(const Duration(milliseconds: 500));
                     },
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: memoryState.memoryBoxes.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final box = memoryState.memoryBoxes[index];
+                        return MemoryBoxTile(
+                          box: box,
+                          workspaceId: workspaceId,
+                          sectionId: sectionId,
+                          sectionTitle: sectionTitle,
+                          workspaceName: workspaceName,
+                          availableSections: sectionsState.sections,
+                        );
+                      },
+                    ),
                   );
                 },
               );
             },
           ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => showCreateMemoryBoxDialog(
-            context,
-            workspaceId: workspaceId,
-            sectionId: sectionId,
-          ),
-          child: const Icon(Icons.add),
         ),
       ),
     );

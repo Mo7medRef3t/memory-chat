@@ -7,6 +7,9 @@ import 'package:memory_chat/features/notes/domain/entities/note_entity.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/notes_state.dart';
 import 'package:memory_chat/features/notes/presentation/widgets/note_tile.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
+import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
+import 'package:memory_chat/shared/widgets/app_layout.dart';
 import 'package:memory_chat/shared/widgets/empty_state_card.dart';
 import 'package:memory_chat/shared/widgets/loading_indicator.dart';
 
@@ -15,7 +18,7 @@ class NoteListPage extends StatelessWidget {
   final String sectionId;
   final String memoryBoxId;
   final String? memoryBoxTitle;
-  final bool isRootBox; // ✅ جديد
+  final bool isRootBox;
 
   const NoteListPage({
     super.key,
@@ -23,13 +26,19 @@ class NoteListPage extends StatelessWidget {
     required this.sectionId,
     required this.memoryBoxId,
     this.memoryBoxTitle,
-    this.isRootBox = false, // ✅ Default
+    this.isRootBox = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<NotesCubit>()..loadNotes(memoryBoxId),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<NotesCubit>()..loadNotes(memoryBoxId)),
+        BlocProvider(
+          create: (_) => sl<SectionsCubit>()..loadSections(workspaceId),
+        ),
+        BlocProvider(create: (_) => sl<CreateWorkspaceCubit>()),
+      ],
       child: _NoteListView(
         workspaceId: workspaceId,
         sectionId: sectionId,
@@ -56,76 +65,63 @@ class _NoteListView extends StatelessWidget {
     this.isRootBox = false,
   });
 
-  void _handleBack(BuildContext context) {
-    if (isRootBox) {
-      // ✅ ارجع للـ Workspace Details
-      context.goNamed(
-        RouteNames.workspaceDetails,
-        pathParameters: {'workspaceId': workspaceId},
-      );
-    } else {
-      // ✅ ارجع للـ MemoryBoxList
-      context.goNamed(
-        RouteNames.memoryBoxList,
-        pathParameters: {'workspaceId': workspaceId, 'sectionId': sectionId},
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(memoryBoxTitle ?? 'Notes'),
-        centerTitle: true,
-        leading: BackButton(onPressed: () => _handleBack(context)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _navigateToEditor(context, noteId: null),
-          ),
-        ],
-      ),
-      body: BlocBuilder<NotesCubit, NotesState>(
-        builder: (context, state) {
-          if (state.status == NotesStatus.loading && state.notes.isEmpty) {
-            return const LoadingIndicator();
-          }
+    return AppLayout(
+      selectedWorkspaceId: workspaceId,
+      selectedSectionId: isRootBox ? null : sectionId,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(memoryBoxTitle ?? 'Notes'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _navigateToEditor(context, noteId: null),
+            ),
+          ],
+        ),
+        body: BlocBuilder<NotesCubit, NotesState>(
+          builder: (context, state) {
+            if (state.status == NotesStatus.loading && state.notes.isEmpty) {
+              return const LoadingIndicator();
+            }
 
-          if (state.status == NotesStatus.failure && state.notes.isEmpty) {
-            return Center(
-              child: Text(state.errorMessage ?? 'Something went wrong'),
-            );
-          }
-
-          if (state.notes.isEmpty) {
-            return ListView(
-              children: [
-                const SizedBox(height: 100),
-                EmptyStateCard(
-                  icon: Icons.note_alt_outlined,
-                  message: 'No notes yet',
-                  actionLabel: 'Create your first note',
-                  onAction: () => _navigateToEditor(context, noteId: null),
-                ),
-              ],
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: state.notes.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final note = state.notes[index];
-              return NoteTile(
-                note: note,
-                onEdit: () => _navigateToEditor(context, noteId: note.id),
-                onDelete: () => context.read<NotesCubit>().deleteNote(note.id),
+            if (state.notes.isEmpty) {
+              return ListView(
+                children: [
+                  const SizedBox(height: 100),
+                  EmptyStateCard(
+                    icon: Icons.note_alt_outlined,
+                    message: 'No notes yet',
+                    actionLabel: 'Create your first note',
+                    onAction: () => _navigateToEditor(context, noteId: null),
+                  ),
+                ],
               );
-            },
-          );
-        },
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<NotesCubit>().loadNotes(memoryBoxId);
+                return Future.delayed(const Duration(milliseconds: 500));
+              },
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: state.notes.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final note = state.notes[index];
+                  return NoteTile(
+                    note: note,
+                    onEdit: () => _navigateToEditor(context, noteId: note.id),
+                    onDelete: () =>
+                        context.read<NotesCubit>().deleteNote(note.id),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -143,7 +139,6 @@ class _NoteListView extends StatelessWidget {
     }
 
     if (isRootBox) {
-      // ✅ استخدم rootNoteEditor للـ Root
       context.goNamed(
         RouteNames.rootNoteEditor,
         pathParameters: {
@@ -159,7 +154,6 @@ class _NoteListView extends StatelessWidget {
         },
       );
     } else {
-      // ✅ استخدم noteEditor للـ Section
       context.goNamed(
         RouteNames.noteEditor,
         pathParameters: {

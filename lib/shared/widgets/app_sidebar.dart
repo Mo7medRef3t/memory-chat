@@ -1,92 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:memory_chat/app/di/injection_container.dart';
 import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/app/theme/app_colors.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_state.dart';
 import 'package:memory_chat/features/workspaces/presentation/cubit/workspace_list_cubit.dart';
 import 'package:memory_chat/features/workspaces/presentation/cubit/workspace_list_state.dart';
 
 class AppSidebar extends StatelessWidget {
   final String? selectedWorkspaceId;
+  final String? selectedSectionId;
   final VoidCallback? onCreateWorkspace;
+  final VoidCallback? onCreateSection;
 
   const AppSidebar({
     super.key,
     this.selectedWorkspaceId,
+    this.selectedSectionId,
     this.onCreateWorkspace,
+    this.onCreateSection,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 250,
+      width: 200,
       color: AppColors.darkSidebarBg,
       child: Column(
         children: [
           _buildHeader(context),
           const Divider(color: AppColors.darkDivider, height: 1),
-          Expanded(
-            child: BlocBuilder<WorkspaceListCubit, WorkspaceListState>(
-              builder: (context, state) {
-                if (state.status == WorkspaceListStatus.loading) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.darkTextSecondary,
-                    ),
-                  );
-                }
 
-                if (state.workspaces.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.workspaces_outlined,
-                          color: AppColors.darkTextMuted,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No workspaces yet',
-                          style: TextStyle(color: AppColors.darkTextMuted),
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton.icon(
-                          onPressed: onCreateWorkspace,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Create Workspace'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+          // Workspaces List
+          _buildWorkspacesSection(context),
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: state.workspaces.length,
-                  itemBuilder: (context, index) {
-                    final workspace = state.workspaces[index];
-                    final isSelected = workspace.id == selectedWorkspaceId;
+          // Sections List (لو في workspace محدد)
+          if (selectedWorkspaceId != null) ...[
+            const Divider(color: AppColors.darkDivider, height: 1),
+            Expanded(child: _buildSectionsSection(context)),
+          ] else ...[
+            const Expanded(child: SizedBox()),
+          ],
 
-                    return _buildWorkspaceItem(
-                      context,
-                      workspace.name,
-                      isSelected,
-                      onTap: () {
-                        context.goNamed(
-                          RouteNames.workspaceDetails,
-                          pathParameters: {'workspaceId': workspace.id},
-                          extra: workspace.name,
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
           const Divider(color: AppColors.darkDivider, height: 1),
           _buildUserSection(context),
         ],
@@ -144,17 +102,215 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildWorkspaceItem(
-    BuildContext context,
-    String name,
-    bool isSelected, {
-    VoidCallback? onTap,
+  Widget _buildWorkspacesSection(BuildContext context) {
+    return BlocBuilder<WorkspaceListCubit, WorkspaceListState>(
+      builder: (context, state) {
+        if (state.status == WorkspaceListStatus.loading) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.darkTextSecondary,
+              ),
+            ),
+          );
+        }
+
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 200),
+          child: ListView.builder(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: state.workspaces.length,
+            itemBuilder: (context, index) {
+              final workspace = state.workspaces[index];
+              final isSelected = workspace.id == selectedWorkspaceId;
+
+              return InkWell(
+                onTap: () {
+                  context.goNamed(
+                    RouteNames.workspaceDetails,
+                    pathParameters: {'workspaceId': workspace.id},
+                    extra: workspace.name,
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.darkSidebarActive
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.workspaces,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.darkTextSecondary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          workspace.name,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.darkTextSecondary,
+                            fontSize: 14,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionsSection(BuildContext context) {
+    return BlocProvider(
+      create: (_) => sl<SectionsCubit>()..loadSections(selectedWorkspaceId!),
+      child: BlocBuilder<SectionsCubit, SectionsState>(
+        builder: (context, state) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                child: Row(
+                  children: [
+                    const Text(
+                      'SECTIONS',
+                      style: TextStyle(
+                        color: AppColors.darkTextMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (onCreateSection != null)
+                      InkWell(
+                        onTap: onCreateSection,
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.add,
+                            color: AppColors.darkTextMuted,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Root Memory Boxes Item
+              _buildSectionItem(
+                context,
+                icon: Icons.home_outlined,
+                title: 'All Notes',
+                isSelected: selectedSectionId == null,
+                onTap: () {
+                  context.goNamed(
+                    RouteNames.workspaceDetails,
+                    pathParameters: {'workspaceId': selectedWorkspaceId!},
+                  );
+                },
+              ),
+
+              // Sections List
+              if (state.status == SectionsStatus.loading)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: AppColors.darkTextSecondary,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                )
+              else if (state.sections.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    'No sections yet',
+                    style: TextStyle(
+                      color: AppColors.darkTextMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: state.sections.length,
+                    itemBuilder: (context, index) {
+                      final section = state.sections[index];
+                      final isSelected = section.id == selectedSectionId;
+
+                      return _buildSectionItem(
+                        context,
+                        icon: Icons.folder_outlined,
+                        title: section.title,
+                        isSelected: isSelected,
+                        onTap: () {
+                          context.goNamed(
+                            RouteNames.memoryBoxList,
+                            pathParameters: {
+                              'workspaceId': selectedWorkspaceId!,
+                              'sectionId': section.id,
+                            },
+                            extra: {'sectionTitle': section.title},
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.darkSidebarActive : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
@@ -162,14 +318,14 @@ class AppSidebar extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              Icons.workspaces,
+              icon,
               color: isSelected ? Colors.white : AppColors.darkTextSecondary,
-              size: 18,
+              size: 16,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                name,
+                title,
                 style: TextStyle(
                   color: isSelected
                       ? Colors.white

@@ -6,8 +6,10 @@ import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/note_editor_cubit.dart';
 import 'package:memory_chat/features/notes/presentation/cubit/note_editor_state.dart';
+import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
+import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
+import 'package:memory_chat/shared/widgets/app_layout.dart';
 import 'package:memory_chat/shared/widgets/app_text_field.dart';
-import 'package:memory_chat/shared/widgets/primary_button.dart';
 
 class NoteEditorPage extends StatefulWidget {
   final String workspaceId;
@@ -107,125 +109,129 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           SnackBar(content: Text(isEditMode ? 'Note updated' : 'Note created')),
         );
 
-        // ✅ ارجع للـ List الصح حسب الـ Type
-        if (widget.isRootBox) {
-          context.goNamed(
-            RouteNames.rootNoteList,
-            pathParameters: {
-              'workspaceId': widget.workspaceId,
-              'memoryBoxId': widget.memoryBoxId,
-            },
-            extra: {'memoryBoxTitle': widget.memoryBoxTitle},
-          );
-        } else {
-          context.goNamed(
-            RouteNames.noteList,
-            pathParameters: {
-              'workspaceId': widget.workspaceId,
-              'sectionId': widget.sectionId,
-              'memoryBoxId': widget.memoryBoxId,
-            },
-            extra: {'memoryBoxTitle': widget.memoryBoxTitle},
-          );
-        }
+        _navigateBack();
       }
+    }
+  }
+
+  void _navigateBack() {
+    if (widget.isRootBox) {
+      context.goNamed(
+        RouteNames.rootNoteList,
+        pathParameters: {
+          'workspaceId': widget.workspaceId,
+          'memoryBoxId': widget.memoryBoxId,
+        },
+        extra: {'memoryBoxTitle': widget.memoryBoxTitle},
+      );
+    } else {
+      context.goNamed(
+        RouteNames.noteList,
+        pathParameters: {
+          'workspaceId': widget.workspaceId,
+          'sectionId': widget.sectionId,
+          'memoryBoxId': widget.memoryBoxId,
+        },
+        extra: {'memoryBoxTitle': widget.memoryBoxTitle},
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<NoteEditorCubit>(),
-      child: BlocListener<NoteEditorCubit, NoteEditorState>(
-        listener: (context, state) {
-          if (state.status == NoteEditorStatus.failure &&
-              state.errorMessage != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
-          }
-        },
-        child: PopScope(
-          canPop: !_isDirty,
-          onPopInvokedWithResult: (didPop, result) async {
-            if (didPop) return;
-            final shouldPop = await _onWillPop();
-            if (shouldPop && context.mounted) {
-              Navigator.pop(context);
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<NoteEditorCubit>()),
+        BlocProvider(
+          create: (_) => sl<SectionsCubit>()..loadSections(widget.workspaceId),
+        ),
+        BlocProvider(create: (_) => sl<CreateWorkspaceCubit>()),
+      ],
+      child: AppLayout(
+        selectedWorkspaceId: widget.workspaceId,
+        selectedSectionId: widget.isRootBox ? null : widget.sectionId,
+        child: BlocListener<NoteEditorCubit, NoteEditorState>(
+          listener: (context, state) {
+            if (state.status == NoteEditorStatus.failure &&
+                state.errorMessage != null) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
             }
           },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(isEditMode ? 'Edit Note' : 'New Note'),
-              leading: BackButton(
-                onPressed: () async {
-                  final shouldPop = await _onWillPop();
-                  if (shouldPop && context.mounted) {
-                    if (widget.isRootBox) {
-                      context.goNamed(
-                        RouteNames.rootNoteList,
-                        pathParameters: {
-                          'workspaceId': widget.workspaceId,
-                          'memoryBoxId': widget.memoryBoxId,
-                        },
-                        extra: {'memoryBoxTitle': widget.memoryBoxTitle},
-                      );
-                    } else {
-                      context.goNamed(
-                        RouteNames.noteList,
-                        pathParameters: {
-                          'workspaceId': widget.workspaceId,
-                          'sectionId': widget.sectionId,
-                          'memoryBoxId': widget.memoryBoxId,
-                        },
-                        extra: {'memoryBoxTitle': widget.memoryBoxTitle},
-                      );
+          child: PopScope(
+            canPop: !_isDirty,
+            onPopInvokedWithResult: (didPop, result) async {
+              if (didPop) return;
+              final shouldPop = await _onWillPop();
+              if (shouldPop && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(isEditMode ? 'Edit Note' : 'New Note'),
+                leading: BackButton(
+                  onPressed: () async {
+                    final shouldPop = await _onWillPop();
+                    if (shouldPop && context.mounted) {
+                      _navigateBack();
                     }
-                  }
-                },
+                  },
+                ),
+                actions: [
+                  BlocBuilder<NoteEditorCubit, NoteEditorState>(
+                    builder: (context, state) {
+                      return TextButton(
+                        onPressed: state.status == NoteEditorStatus.loading
+                            ? null
+                            : () => _save(context),
+                        child: state.status == NoteEditorStatus.loading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(isEditMode ? 'Update' : 'Save'),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ),
-            body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      AppTextField(
-                        controller: _titleController,
-                        hintText: 'Note title',
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Title is required'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _contentController,
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          decoration: const InputDecoration(
-                            hintText: 'Write your note here...',
-                            border: OutlineInputBorder(),
-                          ),
+              body: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        AppTextField(
+                          controller: _titleController,
+                          hintText: 'Note title',
                           validator: (v) => v == null || v.trim().isEmpty
-                              ? 'Content is required'
+                              ? 'Title is required'
                               : null,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      BlocBuilder<NoteEditorCubit, NoteEditorState>(
-                        builder: (context, state) {
-                          return PrimaryButton(
-                            text: isEditMode ? 'Update Note' : 'Save Note',
-                            isLoading: state.status == NoteEditorStatus.loading,
-                            onPressed: () => _save(context),
-                          );
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _contentController,
+                            maxLines: null,
+                            expands: true,
+                            textAlignVertical: TextAlignVertical.top,
+                            decoration: const InputDecoration(
+                              hintText: 'Write your note here...',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Content is required'
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -7,14 +7,18 @@ import 'app_sidebar.dart';
 
 class AppLayout extends StatelessWidget {
   final String? selectedWorkspaceId;
+  final String? selectedSectionId;
   final Widget child;
   final VoidCallback? onCreateWorkspace;
+  final VoidCallback? onCreateSection;
 
   const AppLayout({
     super.key,
     this.selectedWorkspaceId,
+    this.selectedSectionId,
     required this.child,
     this.onCreateWorkspace,
+    this.onCreateSection,
   });
 
   @override
@@ -34,9 +38,10 @@ class AppLayout extends StatelessWidget {
           children: [
             AppSidebar(
               selectedWorkspaceId: selectedWorkspaceId,
+              selectedSectionId: selectedSectionId,
               onCreateWorkspace: onCreateWorkspace,
+              onCreateSection: onCreateSection,
             ),
-
             Expanded(child: child),
           ],
         ),
