@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:memory_chat/app/di/injection_container.dart';
 import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/app/theme/app_colors.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
@@ -27,7 +26,7 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 200,
+      width: 260,
       color: AppColors.darkSidebarBg,
       child: Column(
         children: [
@@ -186,116 +185,122 @@ class AppSidebar extends StatelessWidget {
   }
 
   Widget _buildSectionsSection(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<SectionsCubit>()..loadSections(selectedWorkspaceId!),
-      child: BlocBuilder<SectionsCubit, SectionsState>(
-        builder: (context, state) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                child: Row(
-                  children: [
-                    const Text(
-                      'SECTIONS',
-                      style: TextStyle(
-                        color: AppColors.darkTextMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (onCreateSection != null)
-                      InkWell(
-                        onTap: onCreateSection,
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.add,
-                            color: AppColors.darkTextMuted,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+    // ✅ الحل: نعمل BlocBuilder على workspaceId عشان نعيد تحميل الـ sections
+    return BlocBuilder<SectionsCubit, SectionsState>(
+      builder: (context, state) {
+        // ✅ لما الـ workspace يتغير، نعمل load للـ sections الجديدة
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (selectedWorkspaceId != null) {
+            context.read<SectionsCubit>().loadSections(selectedWorkspaceId!);
+          }
+        });
 
-              // Root Memory Boxes Item
-              _buildSectionItem(
-                context,
-                icon: Icons.home_outlined,
-                title: 'All Notes',
-                isSelected: selectedSectionId == null,
-                onTap: () {
-                  context.goNamed(
-                    RouteNames.workspaceDetails,
-                    pathParameters: {'workspaceId': selectedWorkspaceId!},
-                  );
-                },
-              ),
-
-              // Sections List
-              if (state.status == SectionsStatus.loading)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: AppColors.darkTextSecondary,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
-                )
-              else if (state.sections.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    'No sections yet',
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+              child: Row(
+                children: [
+                  const Text(
+                    'SECTIONS',
                     style: TextStyle(
                       color: AppColors.darkTextMuted,
                       fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                )
-              else
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: state.sections.length,
-                    itemBuilder: (context, index) {
-                      final section = state.sections[index];
-                      final isSelected = section.id == selectedSectionId;
+                  const Spacer(),
+                  if (onCreateSection != null)
+                    InkWell(
+                      onTap: onCreateSection,
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.add,
+                          color: AppColors.darkTextMuted,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
 
-                      return _buildSectionItem(
-                        context,
-                        icon: Icons.folder_outlined,
-                        title: section.title,
-                        isSelected: isSelected,
-                        onTap: () {
-                          context.goNamed(
-                            RouteNames.memoryBoxList,
-                            pathParameters: {
-                              'workspaceId': selectedWorkspaceId!,
-                              'sectionId': section.id,
-                            },
-                            extra: {'sectionTitle': section.title},
-                          );
-                        },
-                      );
-                    },
+            // Root Memory Boxes Item
+            _buildSectionItem(
+              context,
+              icon: Icons.home_outlined,
+              title: 'All Notes',
+              isSelected: selectedSectionId == null,
+              onTap: () {
+                context.goNamed(
+                  RouteNames.workspaceDetails,
+                  pathParameters: {'workspaceId': selectedWorkspaceId!},
+                );
+              },
+            ),
+
+            // Sections List
+            if (state.status == SectionsStatus.loading &&
+                state.sections.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: AppColors.darkTextSecondary,
+                      strokeWidth: 2,
+                    ),
                   ),
                 ),
-            ],
-          );
-        },
-      ),
+              )
+            else if (state.sections.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'No sections yet',
+                  style: TextStyle(
+                    color: AppColors.darkTextMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  itemCount: state.sections.length,
+                  itemBuilder: (context, index) {
+                    final section = state.sections[index];
+                    final isSelected = section.id == selectedSectionId;
+
+                    return _buildSectionItem(
+                      context,
+                      icon: Icons.folder_outlined,
+                      title: section.title,
+                      isSelected: isSelected,
+                      onTap: () {
+                        context.goNamed(
+                          RouteNames.memoryBoxList,
+                          pathParameters: {
+                            'workspaceId': selectedWorkspaceId!,
+                            'sectionId': section.id,
+                          },
+                          extra: {'sectionTitle': section.title},
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

@@ -21,6 +21,7 @@ class WorkspaceDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
+      key: ValueKey(workspaceId),
       providers: [
         BlocProvider(
           create: (_) => sl<SectionsCubit>()..loadSections(workspaceId),
