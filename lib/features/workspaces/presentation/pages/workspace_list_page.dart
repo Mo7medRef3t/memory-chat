@@ -1,314 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/di/injection_container.dart';
-import 'package:memory_chat/app/router/route_names.dart';
-import 'package:memory_chat/core/utils/validators.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_cubit.dart';
-import 'package:memory_chat/features/workspaces/presentation/cubit/create_workspace_state.dart';
-import 'package:memory_chat/features/workspaces/presentation/cubit/workspace_list_cubit.dart';
-import 'package:memory_chat/features/workspaces/presentation/cubit/workspace_list_state.dart';
-import 'package:memory_chat/shared/widgets/app_text_field.dart';
-import 'package:memory_chat/shared/widgets/loading_indicator.dart';
-import 'package:memory_chat/shared/widgets/primary_button.dart';
+import 'package:memory_chat/shared/dialogs/create_workspace_dialog.dart';
+import 'package:memory_chat/shared/widgets/app_layout.dart';
 
 class WorkspaceListPage extends StatelessWidget {
   const WorkspaceListPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.read<AuthCubit>().state;
-    final currentUserId = authState.user?.id;
-
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) =>
-              sl<WorkspaceListCubit>()..loadWorkspaces(currentUserId ?? ''),
-        ),
-        BlocProvider(create: (_) => sl<CreateWorkspaceCubit>()),
-      ],
-      child: _WorkspaceListView(currentUserId: currentUserId ?? ''),
+    return BlocProvider(
+      create: (_) => sl<CreateWorkspaceCubit>(),
+      child: const _WorkspaceListView(),
     );
   }
 }
 
 class _WorkspaceListView extends StatelessWidget {
-  final String currentUserId;
-
-  const _WorkspaceListView({required this.currentUserId});
+  const _WorkspaceListView();
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CreateWorkspaceCubit, CreateWorkspaceState>(
-      listener: (context, state) {
-        if (state.status == CreateWorkspaceStatus.success) {
-          context.read<WorkspaceListCubit>().loadWorkspaces(currentUserId);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Workspace created successfully')),
-          );
-        }
+    final authState = context.read<AuthCubit>().state;
+    final currentUserId = authState.user?.id ?? '';
 
-        if (state.status == CreateWorkspaceStatus.failure &&
-            state.errorMessage != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Workspaces'),
-          actions: [
-            IconButton(
-              onPressed: () {
-                context.read<AuthCubit>().signOut();
-              },
-              icon: const Icon(Icons.logout),
+    return AppLayout(
+      onCreateWorkspace: () => _showCreateWorkspaceDialog(context, currentUserId),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.workspaces,
+              size: 80,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Select a workspace to get started',
+              style: TextStyle(
+                fontSize: 18,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Or create a new workspace from the sidebar',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => _showCreateWorkspaceDialog(context, currentUserId),
+              icon: const Icon(Icons.add),
+              label: const Text('Create Workspace'),
             ),
           ],
-        ),
-        body: BlocBuilder<WorkspaceListCubit, WorkspaceListState>(
-          builder: (context, state) {
-            if (state.status == WorkspaceListStatus.loading) {
-              return const LoadingIndicator();
-            }
-
-            if (state.status == WorkspaceListStatus.failure) {
-              return Center(
-                child: Text(state.errorMessage ?? 'Something went wrong'),
-              );
-            }
-
-            if (state.workspaces.isEmpty) {
-              return const Center(child: Text('No workspaces yet'));
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.workspaces.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final workspace = state.workspaces[index];
-                final isOwner =
-                    workspace.ownerId == currentUserId; // ✅ التحقق من الـ Owner
-
-                return Card(
-                  child: ListTile(
-                    title: Text(workspace.name),
-                    subtitle: Text(workspace.description ?? 'No description'),
-                    trailing: isOwner
-                        ? PopupMenuButton<String>(
-                            onSelected: (value) {
-                              if (value == 'rename') {
-                                _showRenameWorkspaceDialog(
-                                  context,
-                                  workspace.id,
-                                  workspace.name,
-                                  workspace.description,
-                                );
-                              } else if (value == 'delete') {
-                                _showDeleteConfirmationDialog(
-                                  context,
-                                  workspace.id,
-                                );
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'rename',
-                                child: Text('Rename'),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Delete'),
-                              ),
-                            ],
-                          )
-                        : const Icon(Icons.chevron_right),
-                    onTap: () {
-                      context.goNamed(
-                        RouteNames.workspaceDetails,
-                        pathParameters: {'workspaceId': workspace.id},
-                        extra: workspace.name,
-                      );
-                    },
-                  ),
-                );
-              },
-            );
-          },
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _showCreateWorkspaceDialog(context, currentUserId);
-          },
-          child: const Icon(Icons.add),
         ),
       ),
     );
   }
 
   void _showCreateWorkspaceDialog(BuildContext context, String currentUserId) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-
     showDialog(
       context: context,
-      builder: (_) {
-        return BlocProvider.value(
-          value: context.read<CreateWorkspaceCubit>(),
-          child: AlertDialog(
-            title: const Text('Create Workspace'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    controller: nameController,
-                    hintText: 'Workspace name',
-                    validator: (value) =>
-                        Validators.requiredField(value, fieldName: 'Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    controller: descriptionController,
-                    hintText: 'Description (optional)',
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              BlocBuilder<CreateWorkspaceCubit, CreateWorkspaceState>(
-                builder: (context, state) {
-                  return SizedBox(
-                    width: 120,
-                    child: PrimaryButton(
-                      text: 'Create',
-                      isLoading: state.status == CreateWorkspaceStatus.loading,
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
-                          await context
-                              .read<CreateWorkspaceCubit>()
-                              .createWorkspace(
-                                name: nameController.text,
-                                description: descriptionController.text,
-                                currentUserId: currentUserId,
-                              );
-
-                          if (context.mounted &&
-                              context
-                                      .read<CreateWorkspaceCubit>()
-                                      .state
-                                      .status ==
-                                  CreateWorkspaceStatus.success) {
-                            Navigator.pop(context);
-                          }
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showRenameWorkspaceDialog(
-    BuildContext context,
-    String workspaceId,
-    String currentName,
-    String? currentDescription,
-  ) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: currentName);
-    final descriptionController = TextEditingController(
-      text: currentDescription ?? '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text('Rename Workspace'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppTextField(
-                  controller: nameController,
-                  hintText: 'Workspace name',
-                  validator: (value) =>
-                      Validators.requiredField(value, fieldName: 'Name'),
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: descriptionController,
-                  hintText: 'Description (optional)',
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            PrimaryButton(
-              text: 'Save',
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  await context.read<WorkspaceListCubit>().renameWorkspace(
-                    workspaceId: workspaceId,
-                    newName: nameController.text,
-                    newDescription: descriptionController.text,
-                  );
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // ✅ إضافة Confirmation Dialog للمسح (Hard Delete)
-  void _showDeleteConfirmationDialog(BuildContext context, String workspaceId) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Workspace'),
-        content: const Text(
-          'Are you sure you want to delete this workspace? All sections, memory boxes, and notes inside it will be permanently deleted. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<WorkspaceListCubit>().deleteWorkspace(workspaceId);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
+      builder: (_) => BlocProvider.value(
+        value: context.read<CreateWorkspaceCubit>(),
+        child: CreateWorkspaceDialog(currentUserId: currentUserId),
       ),
     );
   }

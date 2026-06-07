@@ -16,6 +16,8 @@ class MemoryChatApp extends StatelessWidget {
         title: 'Memory Chat',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.system,
         routerConfig: AppRouter.router,
       ),
     );
