@@ -40,9 +40,8 @@ class AppSidebar extends StatelessWidget {
           if (selectedWorkspaceId != null) ...[
             const Divider(color: AppColors.darkDivider, height: 1),
             Expanded(child: _buildSectionsSection(context)),
-          ] else ...[
+          ] else
             const Expanded(child: SizedBox()),
-          ],
 
           const Divider(color: AppColors.darkDivider, height: 1),
           _buildUserSection(context),
@@ -173,6 +172,28 @@ class AppSidebar extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      // ✅ Popup Menu للـ Edit/Delete
+                      if (isSelected)
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: AppColors.darkTextSecondary,
+                            size: 18,
+                          ),
+                          onSelected: (value) => _handleWorkspaceAction(
+                            context,
+                            workspace.id,
+                            workspace.name,
+                            value,
+                          ),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'edit', child: Text('Edit')),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -184,11 +205,136 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
+  void _handleWorkspaceAction(
+    BuildContext context,
+    String workspaceId,
+    String workspaceName,
+    String action,
+  ) {
+    switch (action) {
+      case 'edit':
+        _showEditWorkspaceDialog(context, workspaceId, workspaceName);
+        break;
+      case 'delete':
+        _showDeleteWorkspaceDialog(context, workspaceId, workspaceName);
+        break;
+    }
+  }
+
+  void _showEditWorkspaceDialog(
+    BuildContext context,
+    String workspaceId,
+    String currentName,
+  ) {
+    final controller = TextEditingController(text: currentName);
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Workspace'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Workspace Name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                context.read<WorkspaceListCubit>().renameWorkspace(
+                  workspaceId: workspaceId,
+                  newName: controller.text.trim(),
+                  newDescription: null,
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteWorkspaceDialog(
+    BuildContext context,
+    String workspaceId,
+    String workspaceName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Workspace'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "$workspaceName"?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'All sections, memory boxes, and notes will be permanently deleted.',
+                      style: TextStyle(fontSize: 13, color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This action cannot be undone.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<WorkspaceListCubit>().deleteWorkspace(workspaceId);
+              Navigator.pop(context);
+
+              // لو الـ workspace المحذوف هو الـ selected، ارجع للـ workspace list
+              if (workspaceId == selectedWorkspaceId && context.mounted) {
+                context.goNamed(RouteNames.workspaceList);
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionsSection(BuildContext context) {
-    // ✅ الحل: نعمل BlocBuilder على workspaceId عشان نعيد تحميل الـ sections
     return BlocBuilder<SectionsCubit, SectionsState>(
       builder: (context, state) {
-        // ✅ لما الـ workspace يتغير، نعمل load للـ sections الجديدة
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (selectedWorkspaceId != null) {
             context.read<SectionsCubit>().loadSections(selectedWorkspaceId!);
@@ -198,7 +344,6 @@ class AppSidebar extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
               child: Row(
@@ -229,7 +374,6 @@ class AppSidebar extends StatelessWidget {
               ),
             ),
 
-            // Root Memory Boxes Item
             _buildSectionItem(
               context,
               icon: Icons.home_outlined,
@@ -243,7 +387,6 @@ class AppSidebar extends StatelessWidget {
               },
             ),
 
-            // Sections List
             if (state.status == SectionsStatus.loading &&
                 state.sections.isEmpty)
               const Padding(
