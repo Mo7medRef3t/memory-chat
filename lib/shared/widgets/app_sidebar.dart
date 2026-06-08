@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:memory_chat/app/router/route_names.dart';
 import 'package:memory_chat/app/theme/app_colors.dart';
+import 'package:memory_chat/app/theme/theme_cubit.dart';
 import 'package:memory_chat/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/sections_cubit.dart';
 import 'package:memory_chat/features/sections/presentation/cubit/sections_state.dart';
@@ -36,7 +37,6 @@ class AppSidebar extends StatelessWidget {
           // Workspaces List
           _buildWorkspacesSection(context),
 
-          // Sections List (لو في workspace محدد)
           if (selectedWorkspaceId != null) ...[
             const Divider(color: AppColors.darkDivider, height: 1),
             Expanded(child: _buildSectionsSection(context)),
@@ -319,7 +319,6 @@ class AppSidebar extends StatelessWidget {
               context.read<WorkspaceListCubit>().deleteWorkspace(workspaceId);
               Navigator.pop(context);
 
-              // لو الـ workspace المحذوف هو الـ selected، ارجع للـ workspace list
               if (workspaceId == selectedWorkspaceId && context.mounted) {
                 context.goNamed(RouteNames.workspaceList);
               }
@@ -495,48 +494,191 @@ class AppSidebar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(12),
-      child: Row(
+      child: Column(
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primaryLight,
-            child: Text(
-              user?.email.substring(0, 1).toUpperCase() ?? 'U',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user?.email.split('@').first ?? 'User',
+          // User Info
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryLight,
+                child: Text(
+                  user?.email.substring(0, 1).toUpperCase() ?? 'U',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const Text(
-                  'Online',
-                  style: TextStyle(color: AppColors.success, fontSize: 11),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.email.split('@').first ?? 'User',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Text(
+                      'Online',
+                      style: TextStyle(color: AppColors.success, fontSize: 11),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              IconButton(
+                onPressed: () => context.read<AuthCubit>().signOut(),
+                icon: const Icon(
+                  Icons.logout,
+                  color: AppColors.darkTextSecondary,
+                ),
+                iconSize: 18,
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: () => context.read<AuthCubit>().signOut(),
-            icon: const Icon(Icons.logout, color: AppColors.darkTextSecondary),
-            iconSize: 18,
+
+          const SizedBox(height: 8),
+
+          // Theme Toggle Button
+          BlocBuilder<ThemeCubit, AppThemeMode>(
+            builder: (context, themeMode) {
+              return Row(
+                children: [
+                  Icon(
+                    themeMode == AppThemeMode.dark
+                        ? Icons.dark_mode
+                        : themeMode == AppThemeMode.light
+                        ? Icons.light_mode
+                        : Icons.brightness_auto,
+                    color: AppColors.darkTextSecondary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      themeMode == AppThemeMode.dark
+                          ? 'Dark Mode'
+                          : themeMode == AppThemeMode.light
+                          ? 'Light Mode'
+                          : 'System',
+                      style: const TextStyle(
+                        color: AppColors.darkTextSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _showThemeSelector(context),
+                    icon: const Icon(
+                      Icons.settings,
+                      color: AppColors.darkTextSecondary,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+
+  void _showThemeSelector(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.darkPanelBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return BlocBuilder<ThemeCubit, AppThemeMode>(
+          builder: (context, currentTheme) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Select Theme',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.brightness_auto,
+                      color: AppColors.darkTextSecondary,
+                    ),
+                    title: const Text(
+                      'System',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    trailing: currentTheme == AppThemeMode.system
+                        ? const Icon(Icons.check, color: AppColors.info)
+                        : null,
+                    onTap: () {
+                      context.read<ThemeCubit>().setThemeMode(
+                        AppThemeMode.system,
+                      );
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.light_mode,
+                      color: AppColors.darkTextSecondary,
+                    ),
+                    title: const Text(
+                      'Light',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    trailing: currentTheme == AppThemeMode.light
+                        ? const Icon(Icons.check, color: AppColors.info)
+                        : null,
+                    onTap: () {
+                      context.read<ThemeCubit>().setThemeMode(
+                        AppThemeMode.light,
+                      );
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.dark_mode,
+                      color: AppColors.darkTextSecondary,
+                    ),
+                    title: const Text(
+                      'Dark',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    trailing: currentTheme == AppThemeMode.dark
+                        ? const Icon(Icons.check, color: AppColors.info)
+                        : null,
+                    onTap: () {
+                      context.read<ThemeCubit>().setThemeMode(
+                        AppThemeMode.dark,
+                      );
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

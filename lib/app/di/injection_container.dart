@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:memory_chat/app/theme/theme_cubit.dart';
 import 'package:memory_chat/core/database/app_database.dart';
 import 'package:memory_chat/core/database/daos/memory_boxes_dao.dart';
 import 'package:memory_chat/core/database/daos/notes_dao.dart';
@@ -206,4 +207,7 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<SectionsDao>(() => SectionsDao(sl()));
   sl.registerLazySingleton<MemoryBoxesDao>(() => MemoryBoxesDao(sl()));
   sl.registerLazySingleton<NotesDao>(() => NotesDao(sl()));
+
+  // ============ Theme ============
+  sl.registerLazySingleton(() => ThemeCubit());
 }
